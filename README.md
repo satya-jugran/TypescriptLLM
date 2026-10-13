@@ -12,7 +12,7 @@ The repository contains two complete, standalone neural network projects demonst
 ## Repository Architecture
 
 ```text
-TypescriptLLM/
+typescript-llm/
 ├── guide/                               # Interactive visual browser guide (HTML/CSS/JS)
 │   ├── css/guide.css                    # Styling for dark-mode interactive widgets
 │   ├── js/guide-app.js                  # Application routing & chapter state
@@ -116,8 +116,8 @@ TypescriptLLM/
 ### Installation
 Clone the repository and install developer dependencies:
 ```bash
-git clone <repo-url>
-cd TypescriptLLM
+git clone https://github.com/satya-jugran/typescript-llm.git
+cd typescript-llm
 npm install
 ```
 
@@ -222,7 +222,10 @@ greedy (temperature=0) from "The ":
 
 ### 3. Interactive Visual Guide
 
-Launch the built-in visual educational guide:
+You can access the live guide hosted on GitHub Pages:
+👉 **[https://satya-jugran.github.io/typescript-llm/](https://satya-jugran.github.io/typescript-llm/)**
+
+Or launch it locally:
 ```bash
 npm run guide
 ```
