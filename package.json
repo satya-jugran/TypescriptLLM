@@ -1,7 +1,7 @@
 {
   "name": "typescript-llm",
   "version": "1.0.0",
-  "description": "Pure TypeScript educational neural networks on CPU: SmolLM-135M inference engine and miniGPT training with autograd from scratch",
+  "description": "Pure TypeScript educational LLMs on CPU: SmolLM-135M inference engine and miniGPT training with autograd from scratch",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {

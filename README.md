@@ -1,8 +1,8 @@
-# TypescriptLLM: Pure TypeScript Neural Networks on CPU
+# TypescriptLLM: Pure TypeScript Large Language Models (LLMs) on CPU
 
 An educational, dependency-free (zero-GPU, 100% CPU-only) machine learning suite built entirely from scratch in strict TypeScript for Node.js.
 
-The repository contains two complete, standalone neural network projects demonstrating modern Transformer architectures and ML systems engineering from fundamental principles:
+The repository contains two complete, standalone Large Language Model (LLM) projects demonstrating modern Transformer architectures and ML systems engineering from fundamental principles:
 
 1. **[SmolLM-135M Inference Engine](./projects/smollm-inference)**: A production-style, high-performance CPU inference engine executing pre-trained Hugging Face models (`SmolLM-135M` / LLaMA architecture) directly from binary SafeTensors with zero-allocation KV-caching, GQA, RoPE, and real-time streaming token generation.
 2. **[miniGPT Autograd & Training](./projects/mini-gpt)**: A reverse-mode automatic differentiation engine (`autograd`) and character-level GPT transformer trained end-to-end on CPU with custom backward graphs, AdamW optimizer, and gradient verification against finite differences.
