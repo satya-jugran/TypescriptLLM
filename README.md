@@ -1,4 +1,4 @@
-# TypescriptLLM: Educational Pure TypeScript Neural Networks on CPU
+# TypescriptLLM: Pure TypeScript Neural Networks on CPU
 
 An educational, dependency-free (zero-GPU, 100% CPU-only) machine learning suite built entirely from scratch in strict TypeScript for Node.js.
 
