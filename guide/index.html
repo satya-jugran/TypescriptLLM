@@ -1,0 +1,1919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypescriptLLM Guide — TypeScript Neural Networks: Inference &amp; Training</title>
+  <link rel="stylesheet" href="css/guide.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Sidebar Navigation -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem">
+        <span style="font-size:1.5rem">🧠</span>
+        <h2 style="font-size:1.25rem; font-weight:700; margin:0; border:none; padding:0; color:#fff">TypescriptLLM</h2>
+      </div>
+      <p style="font-size:0.8rem; color:var(--text-muted); margin:0">TypeScript Neural Networks — CPU Only</p>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div style="font-size:0.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin:0.75rem 0 0.5rem 0.5rem">Fundamentals</div>
+      <a class="nav-item active" data-chapter="fund-1">
+        <span class="nav-number">1</span>
+        <span>The Core Mental Model</span>
+      </a>
+      <a class="nav-item" data-chapter="fund-2">
+        <span class="nav-number">2</span>
+        <span>The Tensor Abstraction</span>
+      </a>
+      <a class="nav-item" data-chapter="fund-3">
+        <span class="nav-number">3</span>
+        <span>Self-Attention &amp; Causal Masking</span>
+      </a>
+      <a class="nav-item" data-chapter="fund-4">
+        <span class="nav-number">4</span>
+        <span>Sampling &amp; Generation Dynamics</span>
+      </a>
+
+      <div style="font-size:0.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin:1.25rem 0 0.5rem 0.5rem; border-top:1px solid var(--border-color); padding-top:1rem">miniGPT — Train from Scratch</div>
+      <a class="nav-item" data-chapter="minigpt-1">
+        <span class="nav-number">1</span>
+        <span>Autograd: Teaching Math to Backprop</span>
+      </a>
+      <a class="nav-item" data-chapter="minigpt-2">
+        <span class="nav-number">2</span>
+        <span>The Training Loop &amp; Optimization</span>
+      </a>
+      <a class="nav-item" data-chapter="minigpt-3">
+        <span class="nav-number">3</span>
+        <span>miniGPT — Live Training &amp; Generation</span>
+      </a>
+      <a class="nav-item" data-chapter="minigpt-4">
+        <span class="nav-number">4</span>
+        <span>Class &amp; Object Architecture Graph</span>
+      </a>
+
+      <div style="font-size:0.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin:1.25rem 0 0.5rem 0.5rem; border-top:1px solid var(--border-color); padding-top:1rem">SmolLM Inference — Production CPU</div>
+      <a class="nav-item" data-chapter="smollm-1">
+        <span class="nav-number">1</span>
+        <span>Prefill vs. Decode Phases</span>
+      </a>
+      <a class="nav-item" data-chapter="smollm-2">
+        <span class="nav-number">2</span>
+        <span>What is the KV Cache?</span>
+      </a>
+      <a class="nav-item" data-chapter="smollm-3">
+        <span class="nav-number">3</span>
+        <span>RoPE &amp; Grouped-Query Attention</span>
+      </a>
+      <a class="nav-item" data-chapter="smollm-4">
+        <span class="nav-number">4</span>
+        <span>SafeTensors &amp; BF16 Math</span>
+      </a>
+      <a class="nav-item" data-chapter="smollm-5">
+        <span class="nav-number">5</span>
+        <span>Live Inference Simulator</span>
+      </a>
+      <a class="nav-item" data-chapter="smollm-6">
+        <span class="nav-number">6</span>
+        <span>Class &amp; Object Architecture Graph</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="main-content">
+
+<!-- ================= FUNDAMENTALS CHAPTER 1 ================= -->
+    <article class="chapter-container active" data-chapter="fund-1">
+      <div style="margin-bottom:1.5rem">
+        <span class="badge badge-cyan">Chapter 1</span>
+        <span class="badge badge-blue" style="margin-left:0.5rem">Fundamentals</span>
+        <h1>The Core Mental Model: From Text to Vectors</h1>
+        <p style="font-size:1.1rem; color:var(--text-primary)">What is an LLM, what is a Transformer, and how does text convert into continuous geometric vectors?</p>
+      </div>
+
+      <!-- Concept Primer -->
+      <div class="primer-card">
+        <h4>💡 Concept Primer: Definitions &amp; Mental Models</h4>
+        <p><strong>What is an LLM?</strong> A Large Language Model is a statistical neural network trained on vast text datasets to predict the single most likely <em>next token</em> given an existing sequence of context words.</p>
+        <p><strong>What is a Transformer?</strong> Introduced by Vaswani et al. in 2017 (<em>"Attention Is All You Need"</em>), the Transformer is a deep learning architecture that processes sequence relationships in parallel using <em>Self-Attention</em> rather than sequential recurrence (like RNNs or LSTMs).</p>
+        <p><strong>How does text generation work?</strong> Text generation is <em>autoregressive</em>: the model outputs one token, appends that new token to the prompt context, and feeds the entire expanded context back through the network to generate the next token, repeating until an End-of-Sequence (<code>&lt;|endoftext|&gt;</code>) token is reached.</p>
+        <p><strong>What is Tokenization?</strong> Computers cannot process raw text strings like <code>"Paris"</code> directly. Tokenization cuts text into chunks called <em>tokens</em> (characters, subwords, or words) and maps each to an integer ID from a fixed vocabulary (size 65 in miniGPT, 49,152 in SmolLM-135M).</p>
+        <p><strong>What is an Embedding?</strong> A token ID is merely an arbitrary index (<code class="inline-math">19556</code>). It carries no semantic geometry: token <code class="inline-math">19557</code> is not "close" to <code class="inline-math">19556</code>. An <strong>Embedding</strong> maps each discrete token ID into a continuous vector space (<strong style="color:var(--accent-cyan)">R</strong><sup>D</sup>) where geometric distance represents semantic similarity.</p>
+      </div>
+
+      <h2>How Language is Tokenized &amp; Embedded</h2>
+      <p>Before any neural computation happens, text is tokenized into integer IDs and mapped to continuous vector rows in an embedding table:</p>
+      <div style="background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:0.75rem; padding:1.25rem; margin:1.25rem 0">
+        <div style="color:var(--text-muted); font-size:0.8rem; margin-bottom:0.5rem">Example Prompt:</div>
+        <div style="font-size:1.15rem; color:#fff; font-weight:600; margin-bottom:1rem">"The capital of France is"</div>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap">
+          <div style="background:var(--code-bg); border:1px solid var(--border-color); padding:0.5rem 0.75rem; border-radius:0.35rem; font-family:monospace">
+            <span style="color:var(--accent-cyan)">"The"</span> → ID: <strong>19556</strong>
+          </div>
+          <div style="background:var(--code-bg); border:1px solid var(--border-color); padding:0.5rem 0.75rem; border-radius:0.35rem; font-family:monospace">
+            <span style="color:var(--accent-cyan)">" capital"</span> → ID: <strong>905</strong>
+          </div>
+          <div style="background:var(--code-bg); border:1px solid var(--border-color); padding:0.5rem 0.75rem; border-radius:0.35rem; font-family:monospace">
+            <span style="color:var(--accent-cyan)">" of"</span> → ID: <strong>17</strong>
+          </div>
+          <div style="background:var(--code-bg); border:1px solid var(--border-color); padding:0.5rem 0.75rem; border-radius:0.35rem; font-family:monospace">
+            <span style="color:var(--accent-cyan)">" France"</span> → ID: <strong>15169</strong>
+          </div>
+          <div style="background:var(--code-bg); border:1px solid var(--border-color); padding:0.5rem 0.75rem; border-radius:0.35rem; font-family:monospace">
+            <span style="color:var(--accent-cyan)">" is"</span> → ID: <strong>3511</strong>
+          </div>
+        </div>
+      </div>
+
+      <h2>Contiguous Table Slice Implementation</h2>
+      <p>Embedding lookup is NOT an expensive matrix multiplication. It is a direct row slice from the embedding table: row <em>i</em> starts at offset <code>i × hiddenSize</code>:</p>
+      <div class="code-container">
+        <div class="code-header">
+          <span class="file-path">projects/smollm-inference/model/transformer.ts</span>
+          <span>Zero-Matmul Embedding Lookup</span>
+        </div>
+        <pre class="code-content"><code>// Slicing floats directly from the contiguous embedding table
+const hiddenSize = 576;
+const embedData = new Float32Array(seqLen * hiddenSize);
+const tableData = this.embedTokens.data;
+
+for (let i = 0; i &lt; seqLen; i++) {
+  const tokenId = inputIds[i];
+  const tableOffset = tokenId * hiddenSize;
+  const targetOffset = i * hiddenSize;
+  
+  // Fast memory copy of contiguous floats
+  embedData.set(
+    tableData.subarray(tableOffset, tableOffset + hiddenSize),
+    targetOffset
+  );
+}</code></pre>
+      </div>
+
+      <div class="chapter-nav-footer">
+        <div></div>
+        <button class="btn btn-primary btn-next-chapter">Next: Fundamentals Chapter 2 — The Tensor Abstraction →</button>
+      </div>
+    </article>
+
+<!-- ================= CHAPTER 2 ================= -->
+    <article class="chapter-container" data-chapter="fund-2">
+      <div style="margin-bottom:1.5rem">
+        <span class="badge badge-cyan">Chapter 2</span>
+        <span class="badge badge-blue" style="margin-left:0.5rem">Fundamentals</span>
+        <h1>The Tensor Abstraction &amp; Flat Memory Layout</h1>
+        <p style="font-size:1.1rem; color:var(--text-primary)">Memory layout, contiguous buffers, strides, and cache-friendly CPU math.</p>
+      </div>
+
+      <div class="primer-card">
+        <h4>💡 Concept Primer: What is a Tensor?</h4>
+        <p><strong>Definition:</strong> A <em>Tensor</em> is a generalized multi-dimensional array of numerical values. A 0D tensor is a scalar (<code class="inline-math">7</code>), a 1D tensor is a vector (<code class="inline-math">[1, 2]</code>), a 2D tensor is a matrix (rows &amp; cols), and 3D/4D tensors represent sequence lengths, attention heads, and features.</p>
+        <p><strong>Why can't we use standard JavaScript <code>number[][]</code>?</strong> In JavaScript, <code>number[][]</code> is an array of object references pointing to other arrays scattered randomly across the V8 heap. This causes massive CPU cache misses and triggers frequent garbage collection pauses. TypescriptLLM stores all data inside flat, contiguous <strong><code>Float32Array</code></strong> memory.</p>
+        <p><strong>What are Shape and Stride?</strong>
+          <strong>Shape</strong> defines the dimensions (e.g. <code class="inline-math">[2, 3]</code>).
+          <strong>Stride</strong> indicates how many memory elements to skip to advance by 1 unit along that dimension. In row-major layout:
+          <code class="inline-math">stride[k] = &prod;<sub>i &gt; k</sub> shape[i]</code>.
+        </p>
+      </div>
+
+      <h2>Interactive Widget: Contiguous Tensor Memory Layout</h2>
+      <p>Hover over any matrix cell in the 2D tensor below to see how row and column coordinates map to a single contiguous memory offset:</p>
+
+      <div class="sandbox-card">
+        <div class="sandbox-header">
+          <div class="sandbox-title"><span>📐</span> 2D Tensor Grid <code class="inline-math">[2 × 3]</code> to Contiguous Memory</div>
+        </div>
+        <div id="tensor-grid-container"></div>
+      </div>
+
+      <h2>The GEMV Optimization Trick (<em>Y</em> = <em>X W</em><sup>T</sup>)</h2>
+      <p>Hugging Face linear layer weights are saved in shape <code class="inline-math">[N, K]</code> where <code class="inline-math">N = out_features</code> and <code class="inline-math">K = in_features</code>. When decoding a single token, <em>X</em> is a vector of length <em>K</em>. Computing <em>Y</em> = <em>X W</em><sup>T</sup> means each row <em>n</em> of <em>W</em> performs a dot product with <em>X</em>:</p>
+
+      <div class="math-block">
+        Y[n] = &sum;<sub>k=0</sub><sup>K-1</sup> X[k] × W[n, k]
+      </div>
+
+      <p>Because both <em>X</em> and row <em>n</em> of <em>W</em> are linear contiguous memory slices, the CPU streams bytes with stride 1, enabling auto-vectorization and zero matrix transpositions!</p>
+
+      <div class="code-container">
+        <div class="code-header">
+          <span class="file-path">src/core/tensor.ts</span>
+          <span>8-Way Loop Unrolled GEMV</span>
+        </div>
+        <pre class="code-content"><code>// Contiguous inner dot product with 8-way unrolling
+for (let n = 0; n &lt; N; n++) {
+  const wRowOffset = n * K;
+  let sum = 0.0;
+  let k = 0;
+  const unrollLimit = K - 7;
+  for (; k &lt; unrollLimit; k += 8) {
+    sum += xData[k]     * wData[wRowOffset + k]
+         + xData[k + 1] * wData[wRowOffset + k + 1]
+         + xData[k + 2] * wData[wRowOffset + k + 2]
+         + xData[k + 3] * wData[wRowOffset + k + 3]
+         + xData[k + 4] * wData[wRowOffset + k + 4]
+         + xData[k + 5] * wData[wRowOffset + k + 5]
+         + xData[k + 6] * wData[wRowOffset + k + 6]
+         + xData[k + 7] * wData[wRowOffset + k + 7];
+  }
+  for (; k &lt; K; k++) {
+    sum += xData[k] * wData[wRowOffset + k];
+  }
+  outData[n] = sum;
+}</code></pre>
+      </div>
+
+      <div class="chapter-nav-footer">
+        <button class="btn btn-secondary btn-prev-chapter">← Fundamentals Chapter 1</button>
+        <button class="btn btn-primary btn-next-chapter">Next: Fundamentals Chapter 3 — Self-Attention &amp; Causal Masking →</button>
+      </div>
+    </article>
+
+<!-- ================= FUNDAMENTALS CHAPTER 3 ================= -->
+    <article class="chapter-container" data-chapter="fund-3">
+      <div style="margin-bottom:1.5rem">
+        <span class="badge badge-cyan">Chapter 3</span>
+        <span class="badge badge-blue" style="margin-left:0.5rem">Fundamentals</span>
+        <h1>Self-Attention &amp; Causal Masking</h1>
+        <p style="font-size:1.1rem; color:var(--text-primary)">Scaled Dot-Product Attention (Q, K, V) and why triangular masking enforces the arrow of time.</p>
+      </div>
+
+      <div class="primer-card">
+        <h4>💡 Concept Primer: Scaled Dot-Product Attention</h4>
+        <p><strong>What is Attention?</strong> In traditional architectures, tokens were processed in isolation or via sequential recurrence. Attention allows every token in a sequence to look across all other tokens simultaneously and dynamically compute how much information to borrow from each.</p>
+        <p><strong>The Query, Key, Value Metaphor:</strong> Attention acts like an information retrieval database:
+          <br>• <strong>Query (Q):</strong> What the current token is searching for (e.g., <em>"I am the verb 'is', who is my subject?"</em>).
+          <br>• <strong>Key (K):</strong> What each candidate token offers or advertises (e.g., <em>"I am the noun 'capital'"</em>).
+          <br>• <strong>Value (V):</strong> The actual semantic content payload communicated if Query and Key match.
+        </p>
+        <p><strong>The Attention Formula:</strong>
+          <code class="inline-math">Attention(Q, K, V) = Softmax((Q · Kᵀ) / √d) · V</code>
+        </p>
+        <p><strong>Why Scale by 1/√d?</strong> When the head dimension <em>d</em> is large (e.g. 64), dot products can grow very large in magnitude. Large values push the Softmax function into flat saturation regions with near-zero gradients. Scaling by <code>1 / √d</code> preserves variance = 1 and maintains stable numerical gradients.</p>
+        <p><strong>Why Causal Triangular Masking?</strong> In autoregressive language modeling, a model must predict token <em>t</em> based <strong>only</strong> on past tokens <em>0 … t−1</em>. To enforce this "arrow of time", a lower-triangular causal mask sets all future attention positions (where <em>col &gt; row</em>) to <code>−Infinity</code>. After Softmax, <code>e^(−∞) = 0</code>, guaranteeing zero probability of leaking future tokens.</p>
+      </div>
+
+      <h2>The Causal Attention Mask Matrix</h2>
+      <p>During parallel sequence evaluation, tokens form a square attention score matrix. The upper triangle is masked with <code>−∞</code> so that future tokens receive zero attention weight:</p>
+
+      <div style="background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:0.75rem; padding:1.25rem; margin:1.5rem 0; overflow-x:auto">
+        <table style="width:100%; border-collapse:collapse; font-family:monospace; font-size:0.85rem; text-align:center">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border-color); color:var(--text-muted)">
+              <th style="padding:0.6rem; text-align:left">Attending Token (Query)</th>
+              <th style="padding:0.6rem; color:var(--accent-cyan)">pos 0 ("The")</th>
+              <th style="padding:0.6rem; color:var(--accent-cyan)">pos 1 ("capital")</th>
+              <th style="padding:0.6rem; color:var(--accent-cyan)">pos 2 ("of")</th>
+              <th style="padding:0.6rem; color:var(--accent-cyan)">pos 3 ("France")</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
+              <td style="padding:0.6rem; text-align:left; font-weight:bold">Row 0: "The"</td>
+              <td style="padding:0.6rem; color:var(--accent-green); background:rgba(34,197,94,0.1)">1.00 (Self)</td>
+              <td style="padding:0.6rem; color:var(--text-muted); background:rgba(239,68,68,0.1)">−∞ (Masked)</td>
+              <td style="padding:0.6rem; color:var(--text-muted); background:rgba(239,68,68,0.1)">−∞ (Masked)</td>
+              <td style="padding:0.6rem; color:var(--text-muted); background:rgba(239,68,68,0.1)">−∞ (Masked)</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
+              <td style="padding:0.6rem; text-align:left; font-weight:bold">Row 1: "capital"</td>
+              <td style="padding:0.6rem; color:var(--accent-green); background:rgba(34,197,94,0.1)">Score(1, 0)</td>
+              <td style="padding:0.6rem; color:var(--accent-green); background:rgba(34,197,94,0.1)">Score(1, 1)</td>
+              <td style="padding:0.6rem; color:var(--text-muted); background:rgba(239,68,68,0.1)">−∞ (Masked)</td>
+              <td style="padding:0.6rem; color:var(--text-muted); background:rgba(239,68,68,0.1)">−∞ (Masked)</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
+              <td style="padding:0.6rem; text-align:left; font-weight:bold">Row 2: "of"</td>
+              <td style="padding:0.6rem; color:var(--accent-green); background:rgba(34,197,94,0.1)">Score(2, 0)</td>
+              <td style="padding:0.6rem; color:var(--accent-green); background:rgba(34,197,94,0.1)">Score(2, 1)</td>
+              <td style="padding:0.6rem; color:var(--accent-green); background:rgba(34,197,94,0.1)">Score(2, 2)</td>
+              <td style="padding:0.6rem; color:var(--text-muted); background:rgba(239,68,68,0.1)">−∞ (Masked)</td>
+            </tr>
+            <tr>
+              <td style="padding:0.6rem; text-align:left; font-weight:bold">Row 3: "France"</td>
+              <td style="padding:0.6rem; color:var(--accent-green); background:rgba(34,197,94,0.1)">Score(3, 0)</td>
+              <td style="padding:0.6rem; color:var(--accent-green); background:rgba(34,197,94,0.1)">Score(3, 1)</td>
+              <td style="padding:0.6rem; color:var(--accent-green); background:rgba(34,197,94,0.1)">Score(3, 2)</td>
+              <td style="padding:0.6rem; color:var(--accent-green); background:rgba(34,197,94,0.1)">Score(3, 3)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Pure TypeScript Implementation</h2>
+      <p>Both miniGPT (<code>projects/mini-gpt/nn/Attention.ts</code>) and SmolLM (<code>projects/smollm-inference/layers/attention.ts</code>) implement this exact scaled dot product with triangular masking:</p>
+
+      <div class="code-container">
+        <div class="code-header">
+          <span class="file-path">projects/mini-gpt/nn/Attention.ts</span>
+          <span>Scaled Dot-Product with Causal Mask</span>
+        </div>
+        <pre class="code-content"><code>// 1. Raw dot-product scores scaled by 1 / sqrt(headDim)
+const scale = 1.0 / Math.sqrt(headDim);
+const scores = q.matmul(k.transposeLast2()).mul(scale); // [B, numHeads, T, T]
+
+// 2. Apply triangular causal mask (future positions -> -Infinity)
+for (let r = 0; r &lt; T; r++) {
+  for (let c = r + 1; c &lt; T; c++) {
+    scores.data[r * T + c] = -Infinity;
+  }
+}
+
+// 3. Row-wise Softmax ensures probabilities sum to 1.0 per query row
+const probs = scores.softmaxRows();
+
+// 4. Weighted combination of Value vectors
+const context = probs.matmul(v); // [B, numHeads, T, headDim]</code></pre>
+      </div>
+
+      <div class="chapter-nav-footer">
+        <button class="btn btn-secondary btn-prev-chapter">← Fundamentals Chapter 2</button>
+        <button class="btn btn-primary btn-next-chapter">Next: Fundamentals Chapter 4 — Sampling &amp; Generation Dynamics →</button>
+      </div>
+    </article>
+
+<!-- ================= CHAPTER 7 ================= -->
+    <article class="chapter-container" data-chapter="fund-4">
+      <div style="margin-bottom:1.5rem">
+        <span class="badge badge-cyan">Chapter 4</span>
+        <span class="badge badge-blue" style="margin-left:0.5rem">Fundamentals</span>
+        <h1>Sampling &amp; Generation Dynamics</h1>
+        <p style="font-size:1.1rem; color:var(--text-primary)">Turning raw logits into probabilities, Temperature, Top-K, Top-P, and Repetition Penalty.</p>
+      </div>
+
+      <div class="primer-card">
+        <h4>💡 Concept Primer: Logits &amp; Samplers</h4>
+        <p><strong>What are Logits?</strong> The raw, unnormalized scores output by the final LM-Head projection for every token in the vocabulary (<code class="inline-math">49,152</code> numbers).</p>
+        <p><strong>What is Greedy Sampling?</strong> Selecting the token with the highest score (<code class="inline-math">argmax</code>). Fast and deterministic, but prone to getting stuck in repetitive loops.</p>
+        <p><strong>What is Temperature?</strong> Dividing logits by temperature <em>T</em>:
+          Low <em>T</em> (<code class="inline-math">0.2</code>) makes probabilities peaked and deterministic.
+          High <em>T</em> (<code class="inline-math">1.0</code>) flattens probabilities, producing diverse and creative outputs.
+        </p>
+        <p><strong>What is Top-K Sampling?</strong> Truncating candidate tokens to only the top <em>K</em> highest-probability choices and discarding everything else.</p>
+        <p><strong>What is Top-P (Nucleus) Sampling?</strong> Selecting the smallest dynamic set of tokens whose cumulative probability mass exceeds <em>P</em> (e.g. <code class="inline-math">90%</code>).</p>
+        <p><strong>What is Repetition Penalty?</strong> Dividing the logits of previously used tokens by a penalty factor (&ge; <code class="inline-math">1.0</code>) to prevent repetitive loops.</p>
+      </div>
+
+      <h2>Interactive Widget: Sampling Sandbox</h2>
+      <p>Adjust Temperature, Top-P, and Top-K below to see how the probability distribution dynamically reshapes in real time:</p>
+
+      <div class="sandbox-card">
+        <div class="sandbox-header">
+          <div class="sandbox-title"><span>🎲</span> Sampling Probability Visualizer</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1.25rem; margin-bottom:1.25rem">
+          <div class="slider-group">
+            <div class="slider-label"><span>Temperature</span><strong id="temp-val" style="color:var(--accent-cyan)">0.70</strong></div>
+            <input type="range" id="temp-slider" class="slider-input" min="0.05" max="2.0" step="0.05" value="0.7">
+          </div>
+          <div class="slider-group">
+            <div class="slider-label"><span>Top-P (Nucleus)</span><strong id="topp-val" style="color:var(--accent-cyan)">0.90</strong></div>
+            <input type="range" id="topp-slider" class="slider-input" min="0.1" max="1.0" step="0.05" value="0.9">
+          </div>
+          <div class="slider-group">
+            <div class="slider-label"><span>Top-K</span><strong id="topk-val" style="color:var(--accent-cyan)">5</strong></div>
+            <input type="range" id="topk-slider" class="slider-input" min="1" max="7" step="1" value="5">
+          </div>
+        </div>
+
+        <div id="sampling-bars-container" style="margin-bottom:1.25rem"></div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center">
+          <button id="sample-token-btn" class="btn btn-primary">Roll Random Sample Token</button>
+          <div id="sample-token-result" style="font-family:monospace; font-size:0.95rem"></div>
+        </div>
+      </div>
+
+      <div class="chapter-nav-footer">
+        <button class="btn btn-secondary btn-prev-chapter">← Fundamentals Chapter 3</button>
+        <button class="btn btn-primary btn-next-chapter">Next: miniGPT Chapter 1 — Autograd →</button>
+      </div>
+    </article>
+
+<!-- ================= MINIGPT CHAPTER 1 ================= -->
+    <article class="chapter-container" data-chapter="minigpt-1">
+      <div style="margin-bottom:1.5rem">
+        <span class="badge badge-amber">Chapter 1</span>
+        <span class="badge badge-purple" style="margin-left:0.5rem">miniGPT</span>
+        <h1>Autograd: Teaching Math to Backprop</h1>
+        <p style="font-size:1.1rem; color:var(--text-primary)">How a reverse-mode computation graph records every operation so the chain rule can compute exact analytical gradients — the engine inside <code>projects/mini-gpt/autograd/Tensor.ts</code>.</p>
+      </div>
+
+      <!-- Comprehensive Concept Primer -->
+      <div class="primer-card">
+        <h4>💡 Concept Primer: Definitions &amp; Mental Models</h4>
+        <p><strong>What is a Gradient?</strong> In calculus, the gradient (∂Loss/∂θ) answers one fundamental question: <em>"If I nudge weight θ up by a tiny amount, does the total error go up or down, and by how much?"</em> Neural networks learn by nudging every weight in the opposite direction of its gradient.</p>
+        <p><strong>What is Automatic Differentiation (Autograd)?</strong> Hand-calculating derivatives for millions of parameters is impossible. Numerical differentiation (finite differences: (f(x+h) − f(x−h)) / (2h)) requires running a forward pass for every single parameter — taking hours for one step! Autograd solves this by recording operations into a <em>Directed Acyclic Graph (DAG)</em> during the forward pass, and then applying the chain rule in reverse to compute exact derivatives for <strong>all parameters simultaneously</strong> in a single backward pass.</p>
+        <p><strong>Why Reverse-Mode and not Forward-Mode?</strong> Forward-mode autograd propagates derivatives from one input to many outputs. Reverse-mode propagates derivatives from <strong>one scalar output (Loss)</strong> back to <strong>millions of inputs (weights)</strong>. Because neural network training always maps millions of weights to a single scalar loss, reverse-mode is millions of times faster.</p>
+        <p><strong>Why Topological Sort?</strong> A node's gradient cannot be passed backward until <em>all</em> nodes that depend on it have already contributed their gradients. Topological sorting ensures we visit nodes in strictly reverse execution order.</p>
+        <p><strong>Why Gradient Accumulation (+=)?</strong> The multivariate chain rule states that if a parameter affects the loss through multiple pathways (e.g. shared embeddings or residual connections), its total gradient is the <strong>sum</strong> of the gradients from each path: ∂L/∂x = ∑ (∂L/∂y_i · ∂y_i/∂x). Therefore, gradients must always accumulate (<code>grad += ...</code>).</p>
+        <p><strong>Why call zeroGrad()?</strong> Because gradients accumulate with <code>+=</code>, if you don't reset <code>.grad</code> to zero before each step, gradients from step 1 leak into step 2, compounding indefinitely and causing the model to diverge.</p>
+      </div>
+
+      <h2>Interactive Computation Graph Visualizer</h2>
+      <p>Interact with a real computation graph below. Adjust input values and weights, compute the forward pass, and watch the chain rule step backward through the graph to compute exact analytical gradients.</p>
+
+      <div class="graph-container" id="autograd-sandbox">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem">
+          <div style="font-weight:700; color:#fff; display:flex; align-items:center; gap:0.5rem">
+            <span>🕸️</span>
+            <span>Neuron Expression: Loss = ½ · (ReLU(w₁·x₁ + w₂·x₂ + b) − y)²</span>
+          </div>
+          <div id="autograd-status-badge" class="badge badge-purple">Ready</div>
+        </div>
+
+        <!-- Controls -->
+        <div style="display:flex; gap:0.75rem; margin-bottom:1.25rem; align-items:center; flex-wrap:wrap">
+          <button id="ag-fwd-btn" class="btn btn-primary">▶ Forward Pass</button>
+          <button id="ag-step-bwd-btn" class="btn btn-secondary">◀ Step Backward</button>
+          <button id="ag-full-bwd-btn" class="btn btn-secondary">⚡ Full Backward</button>
+          <button id="ag-num-check-btn" class="btn btn-outline" style="border-color:var(--accent-amber); color:var(--accent-amber)">🔍 Check Numerical Gradient</button>
+          <button id="ag-reset-btn" class="btn btn-outline">↺ Reset</button>
+        </div>
+
+        <!-- Inputs Row -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(100px, 1fr)); gap:0.6rem; margin-bottom:1.25rem; background:rgba(15,23,42,0.6); padding:0.75rem; border-radius:0.5rem; border:1px solid var(--border-color)">
+          <div>
+            <label style="font-size:0.72rem; color:var(--text-muted); display:block">w₁ (weight)</label>
+            <input type="number" id="ag-in-w1" class="form-control" value="2.0" step="0.5" style="padding:0.35rem 0.5rem">
+          </div>
+          <div>
+            <label style="font-size:0.72rem; color:var(--text-muted); display:block">x₁ (input)</label>
+            <input type="number" id="ag-in-x1" class="form-control" value="1.5" step="0.5" style="padding:0.35rem 0.5rem">
+          </div>
+          <div>
+            <label style="font-size:0.72rem; color:var(--text-muted); display:block">w₂ (weight)</label>
+            <input type="number" id="ag-in-w2" class="form-control" value="-1.0" step="0.5" style="padding:0.35rem 0.5rem">
+          </div>
+          <div>
+            <label style="font-size:0.72rem; color:var(--text-muted); display:block">x₂ (input)</label>
+            <input type="number" id="ag-in-x2" class="form-control" value="2.0" step="0.5" style="padding:0.35rem 0.5rem">
+          </div>
+          <div>
+            <label style="font-size:0.72rem; color:var(--text-muted); display:block">b (bias)</label>
+            <input type="number" id="ag-in-b" class="form-control" value="0.5" step="0.5" style="padding:0.35rem 0.5rem">
+          </div>
+          <div>
+            <label style="font-size:0.72rem; color:var(--accent-cyan); display:block; font-weight:600">y (target)</label>
+            <input type="number" id="ag-in-target" class="form-control" value="3.0" step="0.5" style="padding:0.35rem 0.5rem">
+          </div>
+        </div>
+
+        <!-- Graph Visual Layout -->
+        <div class="graph-flow-layout">
+          <!-- Col 1: Leaf Inputs -->
+          <div class="graph-column">
+            <div class="graph-node-card" id="node-w1">
+              <div class="graph-node-title">Parameter</div>
+              <div class="graph-node-op">w₁</div>
+              <div class="graph-node-metrics">
+                <span class="graph-metric-val">val: <strong id="val-w1">2.00</strong></span>
+                <span class="graph-metric-grad">∂L: <strong id="grad-w1">—</strong></span>
+              </div>
+            </div>
+            <div class="graph-node-card" id="node-x1">
+              <div class="graph-node-title">Constant</div>
+              <div class="graph-node-op">x₁</div>
+              <div class="graph-node-metrics">
+                <span class="graph-metric-val">val: <strong id="val-x1">1.50</strong></span>
+                <span class="graph-metric-grad">∂L: <strong id="grad-x1">—</strong></span>
+              </div>
+            </div>
+            <div class="graph-node-card" id="node-w2">
+              <div class="graph-node-title">Parameter</div>
+              <div class="graph-node-op">w₂</div>
+              <div class="graph-node-metrics">
+                <span class="graph-metric-val">val: <strong id="val-w2">-1.00</strong></span>
+                <span class="graph-metric-grad">∂L: <strong id="grad-w2">—</strong></span>
+              </div>
+            </div>
+            <div class="graph-node-card" id="node-x2">
+              <div class="graph-node-title">Constant</div>
+              <div class="graph-node-op">x₂</div>
+              <div class="graph-node-metrics">
+                <span class="graph-metric-val">val: <strong id="val-x2">2.00</strong></span>
+                <span class="graph-metric-grad">∂L: <strong id="grad-x2">—</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="graph-arrow">→</div>
+
+          <!-- Col 2: Multiplications -->
+          <div class="graph-column">
+            <div class="graph-node-card" id="node-p1">
+              <div class="graph-node-title">Op: mul</div>
+              <div class="graph-node-op">p₁ = w₁·x₁</div>
+              <div class="graph-node-metrics">
+                <span class="graph-metric-val">val: <strong id="val-p1">—</strong></span>
+                <span class="graph-metric-grad">∂L: <strong id="grad-p1">—</strong></span>
+              </div>
+            </div>
+            <div class="graph-node-card" id="node-b">
+              <div class="graph-node-title">Parameter</div>
+              <div class="graph-node-op">b (bias)</div>
+              <div class="graph-node-metrics">
+                <span class="graph-metric-val">val: <strong id="val-b">0.50</strong></span>
+                <span class="graph-metric-grad">∂L: <strong id="grad-b">—</strong></span>
+              </div>
+            </div>
+            <div class="graph-node-card" id="node-p2">
+              <div class="graph-node-title">Op: mul</div>
+              <div class="graph-node-op">p₂ = w₂·x₂</div>
+              <div class="graph-node-metrics">
+                <span class="graph-metric-val">val: <strong id="val-p2">—</strong></span>
+                <span class="graph-metric-grad">∂L: <strong id="grad-p2">—</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="graph-arrow">→</div>
+
+          <!-- Col 3: Addition -->
+          <div class="graph-column">
+            <div class="graph-node-card" id="node-z">
+              <div class="graph-node-title">Op: add</div>
+              <div class="graph-node-op">z = p₁+p₂+b</div>
+              <div class="graph-node-metrics">
+                <span class="graph-metric-val">val: <strong id="val-z">—</strong></span>
+                <span class="graph-metric-grad">∂L: <strong id="grad-z">—</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="graph-arrow">→</div>
+
+          <!-- Col 4: Activation -->
+          <div class="graph-column">
+            <div class="graph-node-card" id="node-act">
+              <div class="graph-node-title">Op: relu</div>
+              <div class="graph-node-op">ŷ = max(0, z)</div>
+              <div class="graph-node-metrics">
+                <span class="graph-metric-val">val: <strong id="val-act">—</strong></span>
+                <span class="graph-metric-grad">∂L: <strong id="grad-act">—</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="graph-arrow">→</div>
+
+          <!-- Col 5: Loss -->
+          <div class="graph-column">
+            <div class="graph-node-card" id="node-loss">
+              <div class="graph-node-title">Scalar Loss</div>
+              <div class="graph-node-op">Loss = ½(ŷ−y)²</div>
+              <div class="graph-node-metrics">
+                <span class="graph-metric-val" style="background:rgba(239,68,68,0.2); color:#f87171">L: <strong id="val-loss">—</strong></span>
+                <span class="graph-metric-grad">Seed: <strong>1.000</strong></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formula Audit Readout -->
+        <div id="ag-audit-box" class="formula-audit-box">
+          Ready. Click <strong>▶ Forward Pass</strong> to evaluate the expression.
+        </div>
+      </div>
+
+      <h2>How miniGPT Implements the Engine in TypeScript</h2>
+      <p>Inside <code>projects/mini-gpt/autograd/Tensor.ts</code>, each Tensor stores its <code>data</code>, <code>grad</code>, and an array of <code>_parents</code> edges. Each parent edge stores a <code>gradFn</code> closure that executes the specific derivative rule for that operation:</p>
+
+      <div class="code-container">
+        <div class="code-header">
+          <span class="file-path">projects/mini-gpt/autograd/Tensor.ts</span>
+          <span>Forward Graph Construction with gradFn Closures</span>
+        </div>
+        <pre class="code-content"><code>// Every operation records its derivative rule as a closure
+mul(other: Tensor): Tensor {
+  const out = new Float64Array(numel(outShape));
+  for (let i = 0; i &lt; out.length; i++)
+    out[i] = a[i % a.length] * b[i % b.length];
+
+  const outT = new Tensor(out, outShape, this._requiresGrad || other._requiresGrad);
+
+  if (this._requiresGrad) {
+    // Chain rule: ∂L/∂a = ∂L/∂out · b
+    outT._parents.push({
+      tensor: this,
+      gradFn: (g) =&gt; {
+        for (let i = 0; i &lt; g.size; i++)
+          this.grad[i % a.length] += g.grad[i] * b[i % b.length];
+      }
+    });
+  }
+
+  if (other._requiresGrad) {
+    // Chain rule: ∂L/∂b = ∂L/∂out · a
+    outT._parents.push({
+      tensor: other,
+      gradFn: (g) =&gt; {
+        for (let i = 0; i &lt; g.size; i++)
+          other.grad[i % b.length] += g.grad[i] * a[i % a.length];
+      }
+    });
+  }
+  return outT;
+}</code></pre>
+      </div>
+
+      <h2>Topological Backward Traversal</h2>
+      <p>Calling <code>loss.backward()</code> initializes <code>loss.grad = [1.0]</code> and runs a depth-first search (DFS) to build a topological ordering of the DAG. It then iterates backwards through the sorted list, calling each node's <code>gradFn</code>:</p>
+
+      <div class="code-container">
+        <div class="code-header">
+          <span class="file-path">projects/mini-gpt/autograd/Tensor.ts</span>
+          <span>Topological Backward Pass</span>
+        </div>
+        <pre class="code-content"><code>backward(): void {
+  this.grad[0] = 1; // Seed: ∂Loss/∂Loss = 1.0
+
+  // 1. Build topological sort (depth-first search)
+  const topo: Tensor[] = [];
+  const visited = new Set&lt;Tensor&gt;();
+  const visit = (t: Tensor) =&gt; {
+    if (visited.has(t)) return;
+    visited.add(t);
+    for (const p of t._parents) visit(p.tensor);
+    topo.push(t);
+  };
+  visit(this);
+
+  // 2. Iterate in reverse topological order
+  for (let i = topo.length - 1; i &gt;= 0; i--) {
+    const t = topo[i];
+    for (const { gradFn } of t._parents) {
+      gradFn(t); // propagate gradients into parent .grad buffers
+    }
+    t._parents.length = 0; // free graph edges to reclaim memory
+  }
+}</code></pre>
+      </div>
+
+      <div class="chapter-nav-footer">
+        <button class="btn btn-secondary btn-prev-chapter">← Fundamentals Chapter 4</button>
+        <button class="btn btn-primary btn-next-chapter">Next: miniGPT Chapter 2 — The Training Loop →</button>
+      </div>
+    </article>
+
+<!-- ================= MINIGPT CHAPTER 2 ================= -->
+    <article class="chapter-container" data-chapter="minigpt-2">
+      <div style="margin-bottom:1.5rem">
+        <span class="badge badge-amber">Chapter 2</span>
+        <span class="badge badge-purple" style="margin-left:0.5rem">miniGPT</span>
+        <h1>The Training Loop &amp; Optimization</h1>
+        <p style="font-size:1.1rem; color:var(--text-primary)">Batch Sampling → Forward Pass → Cross-Entropy Loss → Backward Pass → AdamW Step — the five-step heartbeat that turns random weights into a language model.</p>
+      </div>
+
+      <!-- Concept Primer -->
+      <div class="primer-card">
+        <h4>💡 Concept Primer: Definitions &amp; Mental Models</h4>
+        <p><strong>What is the Training Loop?</strong> The fundamental iterative cycle in machine learning. In each step: (1) sample a batch of text windows, (2) predict the next characters via forward pass, (3) quantify error using cross-entropy loss, (4) backpropagate gradients via autograd, (5) update weights with AdamW, and (6) reset gradient buffers to zero.</p>
+        <p><strong>What is Cross-Entropy Loss?</strong> For next-token prediction, cross-entropy measures how surprised the model is by the actual correct token: <code>Loss = −log(P(correct token))</code>. If the model assigns 100% probability to the correct token, Loss is 0. If it assigns 0% probability, Loss is infinity.</p>
+        <p><strong>Why is Shakespeare Initial Loss Always ≈ 4.17?</strong> With randomly initialized weights, a model assigns uniform probability across all vocabulary symbols. For a 65-character vocabulary, <code>P(correct) = 1/65 ≈ 0.01538</code>. The expected initial loss is <code>−ln(1/65) = ln(65) ≈ 4.174</code>. If training starts at ~4.17 and drops, the model is learning; if it starts at 10.0 or 0.1, weight initialization is broken!</p>
+        <p><strong>What is Perplexity (PPL)?</strong> Perplexity is <code>e^Loss</code>. It represents the <em>effective branching factor</em>: the number of equally probable choices the model is guessing between. At step 0, PPL = e^4.174 = 65 (completely clueless across all 65 characters). At step 100 with Loss = 2.1, PPL = e^2.1 ≈ 8.1 (down to just 8 plausible candidate characters!).</p>
+        <p><strong>Why AdamW?</strong> AdamW (Adam with Decoupled Weight Decay) maintains two statistics per parameter: (1) <em>Momentum (m)</em> dampens high-frequency gradient noise, and (2) <em>RMS scaling (v)</em> adaptively normalizes step sizes across parameters. Finally, <em>Decoupled Weight Decay</em> applies regular weight decay directly to θ (rather than dividing it by variance), providing stable convergence across all Transformer layers.</p>
+      </div>
+
+      <h2>Interactive Cross-Entropy &amp; Perplexity Calculator</h2>
+      <p>Adjust the predicted probability of the true target character to see how cross-entropy loss and perplexity respond mathematically:</p>
+
+      <div class="ce-calc-container" id="ce-calculator">
+        <div class="slider-group">
+          <div class="slider-header">
+            <span>Predicted Probability for Correct Character P(y):</span>
+            <strong id="ce-p-val" style="color:var(--accent-cyan); font-family:monospace">0.0154 (Random Guess 1/65)</strong>
+          </div>
+          <input type="range" id="ce-slider" min="0.001" max="0.999" step="0.001" value="0.0154" class="form-control" style="cursor:pointer">
+        </div>
+
+        <div class="sim-telemetry-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top:1rem">
+          <div class="sim-telemetry-item">
+            <div class="sim-telemetry-label">Cross-Entropy Loss (−ln P)</div>
+            <div class="sim-telemetry-value" id="ce-loss-out" style="color:var(--accent-amber)">4.173</div>
+          </div>
+          <div class="sim-telemetry-item">
+            <div class="sim-telemetry-label">Perplexity (e^Loss = 1/P)</div>
+            <div class="sim-telemetry-value" id="ce-ppl-out" style="color:var(--accent-purple)">65.0 chars</div>
+          </div>
+          <div class="sim-telemetry-item">
+            <div class="sim-telemetry-label">Model Confidence Assessment</div>
+            <div class="sim-telemetry-value" id="ce-state-out" style="color:#94a3b8; font-size:0.8rem">Random Uniform Guessing</div>
+          </div>
+        </div>
+      </div>
+
+      <h2>The Four-Step Implementation</h2>
+      <div class="code-container">
+        <div class="code-header">
+          <span class="file-path">projects/mini-gpt/train/Trainer.ts</span>
+          <span>Core Training Loop Step</span>
+        </div>
+        <pre class="code-content"><code>trainStep(): number {
+  // 1. Get random batch from Shakespeare corpus
+  // Inputs: [B, T] characters; Targets: [B, T] characters shifted by 1
+  const { inputs, targets } = this.getBatch();
+
+  // 2. Forward pass: builds autograd graph
+  const logits = this.model.forward(inputs, this.config.batchSize, this.config.blockSize);
+  const flatLogits = logits.reshape([B * T, vocabSize]);
+  const loss = this.lossFn.forward(flatLogits, targets);
+
+  // 3. Clear old gradients and backpropagate
+  this.optimizer.zeroGrad();
+  loss.backward(); // walks graph in reverse topological order
+
+  // 4. Update parameters using AdamW
+  this.optimizer.step();
+
+  return loss.item(); // detach scalar loss
+}</code></pre>
+      </div>
+
+      <h2>Character-Level Language Modeling Windows</h2>
+      <p>miniGPT breaks text into sliding windows of length <code>blockSize = 32</code>. The prediction target is simply the input string shifted forward by exactly 1 character:</p>
+
+      <div class="code-container">
+        <div class="code-header"><span>Window Example</span></div>
+        <pre class="code-content"><code>Input:   "To be, or not to be, that is th"  (length 32)
+Target:  "o be, or not to be, that is the"  (length 32, shifted by 1)
+
+// The model predicts:
+// at pos 0 ("T")  → predict "o"
+// at pos 1 ("o")  → predict " "
+// at pos 2 (" ")  → predict "b"
+// ...
+// at pos 31 ("h") → predict "e"</code></pre>
+      </div>
+
+      <div class="chapter-nav-footer">
+        <button class="btn btn-secondary btn-prev-chapter">← miniGPT Chapter 1</button>
+        <button class="btn btn-primary btn-next-chapter">Next: miniGPT Chapter 3 — Live Demo →</button>
+      </div>
+    </article>
+
+<!-- ================= MINIGPT CHAPTER 3 ================= -->
+    <article class="chapter-container" data-chapter="minigpt-3">
+      <div style="margin-bottom:1.5rem">
+        <span class="badge badge-amber">Chapter 3</span>
+        <span class="badge badge-purple" style="margin-left:0.5rem">miniGPT</span>
+        <h1>miniGPT — Live Training &amp; Interactive Generation</h1>
+        <p style="font-size:1.1rem; color:var(--text-primary)">Watch the loss fall in real time on Shakespeare, then interactively sample character-by-character with temperature controls.</p>
+      </div>
+
+      <!-- Concept Primer -->
+      <div class="primer-card">
+        <h4>💡 Concept Primer: What is miniGPT?</h4>
+        <p><strong>What is miniGPT?</strong> miniGPT is a complete generative Pre-trained Transformer written from scratch in pure TypeScript without any external framework or matrix library. It implements the classic GPT-2 architecture: token + learned position embeddings, pre-LayerNorm transformer blocks, causal multi-head self-attention with triangular masking, GELU feed-forward networks, and a linear language model head.</p>
+        <p><strong>Why Train on Characters?</strong> Commercial models use subword BPE tokenizers with 32,000–128,000 tokens. While compact, high-dimensional vocabularies require massive projection matrices. By restricting vocabulary to 65 characters, the entire training pipeline fits comfortably in CPU memory and trains in seconds.</p>
+        <p><strong>What Does Temperature Do?</strong> During generation, logits z are scaled by Temperature T: <code>P_i = exp(z_i / T) / ∑ exp(z_j / T)</code>. When T &lt; 0.5, probabilities peak sharply around the top character (greedy, repetitive). When T = 0.7–0.8, the distribution balances coherence and diversity. When T &gt; 1.2, probabilities flatten, producing wild, erratic, or ungrammatical text.</p>
+      </div>
+
+      <h2>Architectural Comparison: miniGPT vs. SmolLM-135M</h2>
+      <p>Both sub-projects live in this repository, each optimized for its distinct role:</p>
+
+      <div class="comparison-table-wrapper">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Design Dimension</th>
+              <th style="color:var(--accent-purple)">miniGPT (projects/mini-gpt)</th>
+              <th style="color:var(--accent-cyan)">SmolLM-135M (projects/smollm-inference)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Primary Objective</strong></td>
+              <td>Training from scratch + Autograd demonstration</td>
+              <td>Ultra-low-latency forward inference on CPU</td>
+            </tr>
+            <tr>
+              <td><strong>Tensor Abstraction</strong></td>
+              <td>Float64Array with reverse-mode DAG graph (<code>.backward()</code>)</td>
+              <td>Float32Array with GEMV-optimized forward passes (No autograd)</td>
+            </tr>
+            <tr>
+              <td><strong>Normalization</strong></td>
+              <td>LayerNorm (Mean + Variance centering, GPT-2 style)</td>
+              <td>RMSNorm (Root Mean Square scaling without centering)</td>
+            </tr>
+            <tr>
+              <td><strong>Activation Function</strong></td>
+              <td>GELU (Gaussian Error Linear Unit)</td>
+              <td>SwiGLU (Swish-Gated Linear Unit with gate projection)</td>
+            </tr>
+            <tr>
+              <td><strong>Positional Encoding</strong></td>
+              <td>Learned Absolute Position Table (wpe: [32, 32])</td>
+              <td>RoPE (Rotary Position Embedding on Q/K vectors)</td>
+            </tr>
+            <tr>
+              <td><strong>Attention Mechanism</strong></td>
+              <td>Multi-Head Attention (4 heads, query=key=value heads)</td>
+              <td>Grouped-Query Attention (9 Query heads, 3 KV heads)</td>
+            </tr>
+            <tr>
+              <td><strong>Tokenization</strong></td>
+              <td>CharTokenizer (65 characters, zero dependencies)</td>
+              <td>Byte-Pair Encoding (BPE, 49,152 vocabulary tokens)</td>
+            </tr>
+            <tr>
+              <td><strong>Memory Strategy</strong></td>
+              <td>Recomputes forward activations for backpropagation</td>
+              <td>Static pre-allocated Key-Value Cache (Zero recomputation)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Interactive Training &amp; Generation Studio</h2>
+
+      <div class="sandbox-card">
+        <div class="sandbox-header">
+          <div class="sandbox-title"><span>🔥</span> Part 1: miniGPT Training Progress</div>
+          <div id="minigpt-phase-badge" class="badge badge-purple">Ready</div>
+        </div>
+
+        <div style="display:flex; gap:0.75rem; margin-bottom:1.25rem; align-items:center; flex-wrap:wrap">
+          <button id="minigpt-run-btn" class="btn btn-primary" style="min-width:140px">▶ Run 100 Steps</button>
+          <button id="minigpt-step-btn" class="btn btn-secondary">Step 10</button>
+          <button id="minigpt-reset-btn" class="btn btn-outline">↺ Reset</button>
+          <div style="margin-left:auto; font-family:monospace; font-size:0.85rem; color:var(--text-secondary)">
+            Step: <strong id="minigpt-step-counter" style="color:var(--accent-cyan)">0</strong> / 100
+          </div>
+        </div>
+
+        <div class="sim-dashboard-grid">
+          <!-- Loss chart area -->
+          <div class="sim-panel">
+            <div class="sim-panel-header">
+              <span>📉 Training Loss Curve</span>
+              <span id="minigpt-loss-val" style="font-family:monospace; font-size:0.88rem; color:var(--accent-amber)">—</span>
+            </div>
+            <canvas id="minigpt-loss-canvas" height="160" style="width:100%; border-radius:0.35rem; background:rgba(15,23,42,0.7)"></canvas>
+            <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-muted); margin-top:0.4rem">
+              <span>Step 0</span>
+              <span style="color:var(--accent-muted)">Baseline random guess ≈ ln(65) ≈ 4.17</span>
+              <span>Step 100</span>
+            </div>
+          </div>
+
+          <!-- Training Snapshot Samples -->
+          <div class="sim-panel">
+            <div class="sim-panel-header">
+              <span>✍️ Training Progress Snapshot</span>
+              <span id="minigpt-ppl-badge" class="badge badge-cyan" style="font-size:0.72rem">PPL: 65.0</span>
+            </div>
+            <div id="minigpt-samples" style="font-family:monospace; font-size:0.85rem; line-height:1.6; min-height:140px; color:#cbd5e1">
+              <em style="color:var(--text-muted)">Click ▶ Run 100 Steps to train the model on Shakespeare…</em>
+            </div>
+          </div>
+        </div>
+
+        <!-- Telemetry bar -->
+        <div class="sim-telemetry-grid" style="margin-top:1.25rem">
+          <div class="sim-telemetry-item">
+            <div class="sim-telemetry-label">Vocabulary Size</div>
+            <div class="sim-telemetry-value" id="minigpt-vocab-size">65 characters</div>
+          </div>
+          <div class="sim-telemetry-item">
+            <div class="sim-telemetry-label">Parameters</div>
+            <div class="sim-telemetry-value" id="minigpt-param-count">~40,000</div>
+          </div>
+          <div class="sim-telemetry-item">
+            <div class="sim-telemetry-label">Context Window</div>
+            <div class="sim-telemetry-value">32 characters</div>
+          </div>
+          <div class="sim-telemetry-item">
+            <div class="sim-telemetry-label">Engine</div>
+            <div class="sim-telemetry-value" style="color:var(--accent-green)">Float64 + Reverse-Mode Autograd</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Generation Studio with Temperature Slider -->
+      <div class="sandbox-card" style="margin-top:1.5rem">
+        <div class="sandbox-header">
+          <div class="sandbox-title"><span>✍️</span> Part 2: Interactive Character Generation Studio</div>
+          <div id="gen-temp-badge" class="badge badge-cyan">Temp: 0.7 (Balanced)</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem">
+          <div>
+            <label style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.35rem">Starting Prompt:</label>
+            <div style="display:flex; gap:0.5rem">
+              <select id="gen-prompt-preset" class="form-control" style="max-width:180px">
+                <option value="The ">"The "</option>
+                <option value="To be, or not ">"To be, or not "</option>
+                <option value="Romeo: ">"Romeo: "</option>
+                <option value="O love, ">"O love, "</option>
+              </select>
+              <input type="text" id="gen-prompt-input" class="form-control" value="The " placeholder="Enter prompt...">
+            </div>
+          </div>
+
+          <div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:0.35rem">
+              <label style="font-size:0.8rem; color:var(--text-muted)">Sampling Temperature (T):</label>
+              <span id="gen-temp-val" style="font-family:monospace; color:var(--accent-cyan); font-weight:700">0.7</span>
+            </div>
+            <input type="range" id="gen-temp-slider" min="0.1" max="1.5" step="0.1" value="0.7" class="form-control" style="cursor:pointer">
+            <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-muted); margin-top:0.25rem">
+              <span>0.1 (Greedy / Repetitive)</span>
+              <span>0.7 (Coherent Shakespeare)</span>
+              <span>1.5 (Creative / Chaotic)</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:0.75rem; margin-bottom:1.25rem; align-items:center; flex-wrap:wrap">
+          <button id="gen-play-btn" class="btn btn-primary">▶ Generate 25 Chars</button>
+          <button id="gen-step-btn" class="btn btn-secondary">Step 1 Char</button>
+          <button id="gen-reset-btn" class="btn btn-outline">↺ Clear</button>
+        </div>
+
+        <!-- Generated Text Stream -->
+        <div class="sim-panel" style="margin-bottom:1.25rem">
+          <div class="sim-panel-header">
+            <span>Live Output Stream</span>
+            <span style="font-size:0.75rem; color:var(--text-muted)">Character Count: <strong id="gen-char-count" style="color:var(--accent-cyan)">4</strong></span>
+          </div>
+          <div id="gen-output-box" class="char-output-stream">The <span class="typing-cursor"></span></div>
+        </div>
+
+        <!-- Next Character Candidates Bar Chart -->
+        <div class="sim-panel">
+          <div class="sim-panel-header">
+            <span>Next Character Probabilities P(c | context)</span>
+            <span style="font-size:0.72rem; color:var(--text-muted)">Click candidate to sample</span>
+          </div>
+          <div id="gen-candidates-list" style="padding:0.5rem 0">
+            <!-- Dynamically populated candidate bars -->
+          </div>
+        </div>
+      </div>
+
+      <h2>Run It Locally</h2>
+      <div class="code-container">
+        <div class="code-header"><span>Terminal — miniGPT Commands</span></div>
+        <pre class="code-content"><code># Run the end-to-end Shakespeare training demo (~100 steps in seconds on CPU)
+npm run minigpt:demo
+
+# Run the 83 numerical gradient checks
+npm run minigpt:test
+
+# Type-check the miniGPT codebase
+npm run minigpt:typecheck</code></pre>
+      </div>
+
+      <h2>Complete Sub-Project Structure</h2>
+      <div class="code-container">
+        <div class="code-header"><span>projects/mini-gpt/</span></div>
+        <pre class="code-content"><code>projects/mini-gpt/
+├── autograd/
+│   ├── Tensor.ts       # Float64 tensor + full reverse-mode autograd DAG graph
+│   ├── Operations.ts   # Causal triangular masking, fused cross-entropy
+│   └── test.ts         # 83 numerical gradient checks
+├── data/
+│   └── CharTokenizer.ts # Character → integer ID encoder/decoder
+├── nn/
+│   ├── Module.ts        # Abstract module base (parameters, zeroGrad, describe)
+│   ├── Linear.ts        # W·x + b with autograd
+│   ├── LayerNorm.ts     # Pre-LN Layer Normalization (mean and variance centering)
+│   ├── Embedding.ts     # Token and learned positional embedding tables
+│   ├── Attention.ts     # Causal multi-head self-attention
+│   ├── FeedForward.ts   # GELU two-layer MLP with 4x hidden expansion
+│   ├── TransformerBlock.ts
+│   └── GPT.ts           # Full model: Embeddings → N Blocks → LayerNorm → LM Head
+├── optim/
+│   └── AdamW.ts         # AdamW with bias-corrected momentum + decoupled weight decay
+├── train/
+│   ├── Loss.ts          # Cross-entropy loss module
+│   └── Trainer.ts       # Training loop, evaluation, text generation
+├── demo.ts              # End-to-end Shakespeare demo (npm run minigpt:demo)
+├── index.ts             # Public API re-exports
+└── tsconfig.json        # ESNext / Bundler / noEmit configuration</code></pre>
+      </div>
+
+      <div class="chapter-nav-footer">
+        <button class="btn btn-secondary btn-prev-chapter">← miniGPT Chapter 2</button>
+        <button class="btn btn-primary btn-next-chapter">Next: miniGPT Chapter 4 — Architecture Call Graph →</button>
+      </div>
+    </article>
+
+<!-- ================= MINIGPT CHAPTER 4 ================= -->
+    <article class="chapter-container" data-chapter="minigpt-4">
+      <div style="margin-bottom:1.5rem">
+        <span class="badge badge-amber">Chapter 4</span>
+        <span class="badge badge-purple" style="margin-left:0.5rem">miniGPT</span>
+        <h1>Class &amp; Object Architecture Call Graph</h1>
+        <p style="font-size:1.1rem; color:var(--text-primary)">Complete object hierarchy, ownership composition, and method invocation call graph across training and generation.</p>
+      </div>
+
+      <div class="primer-card">
+        <h4>💡 Concept Primer: Object Architecture of miniGPT</h4>
+        <p><strong>How is miniGPT structured?</strong> The project employs <em>Composition over Inheritance</em>. Every layer is an instance of an abstract <code>Module</code> base class, which registers parameters and delegates forward calls. The top-level <code>Trainer</code> orchestrates data slicing, model execution, loss evaluation, autograd backpropagation, and AdamW weight updates.</p>
+        <p><strong>How do method calls flow during training?</strong> When <code>trainStep()</code> executes, calls cascade down the tree: <code>Trainer</code> → <code>GPT</code> → <code>TransformerBlock</code> → <code>MultiHeadAttention</code> &amp; <code>FeedForward</code> → <code>Linear</code> → <code>Tensor</code>. In reverse, <code>loss.backward()</code> traverses the recorded DAG in reverse topological order, calling each operation's <code>gradFn</code> closure.</p>
+      </div>
+
+      <h2>Object Composition &amp; Ownership Graph</h2>
+      <p>The layout below illustrates which class instances own and instantiate which child components:</p>
+
+      <div class="graph-container" style="padding:1.5rem">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1rem; margin-bottom:1.5rem">
+          <!-- Orchestration Layer -->
+          <div style="background:var(--code-bg); border:1px solid rgba(56,189,248,0.3); border-radius:0.5rem; padding:1rem">
+            <div style="color:var(--accent-cyan); font-weight:700; font-size:0.85rem; text-transform:uppercase; margin-bottom:0.5rem">1. Orchestration Layer</div>
+            <div style="font-family:monospace; font-size:0.85rem; color:#f8fafc">
+              <strong style="color:#fff">Trainer</strong>
+              <div style="color:var(--text-muted); font-size:0.75rem; margin:0.25rem 0 0.5rem 0.5rem">
+                ├── <code>tokenizer: CharTokenizer</code><br>
+                ├── <code>model: GPT</code><br>
+                ├── <code>lossFn: CrossEntropyLoss</code><br>
+                └── <code>optimizer: AdamW</code>
+              </div>
+            </div>
+            <p style="font-size:0.78rem; color:var(--text-secondary); margin:0">Orchestrates batch slicing, calls <code>model.forward()</code>, <code>lossFn.forward()</code>, <code>loss.backward()</code>, and <code>optimizer.step()</code>.</p>
+          </div>
+
+          <!-- Model Layer -->
+          <div style="background:var(--code-bg); border:1px solid rgba(168,85,247,0.3); border-radius:0.5rem; padding:1rem">
+            <div style="color:var(--accent-purple); font-weight:700; font-size:0.85rem; text-transform:uppercase; margin-bottom:0.5rem">2. GPT Container (Module)</div>
+            <div style="font-family:monospace; font-size:0.85rem; color:#f8fafc">
+              <strong style="color:#fff">GPT</strong>
+              <div style="color:var(--text-muted); font-size:0.75rem; margin:0.25rem 0 0.5rem 0.5rem">
+                ├── <code>tokenEmbedding: TokenEmbedding</code><br>
+                ├── <code>positionEmbedding: PositionEmbedding</code><br>
+                ├── <code>blocks: TransformerBlock[] (×2)</code><br>
+                ├── <code>lnFinal: LayerNorm</code><br>
+                └── <code>lmHead: Linear (C → V)</code>
+              </div>
+            </div>
+            <p style="font-size:0.78rem; color:var(--text-secondary); margin:0">Owns token tables and delegates token representations through residual blocks to the classification head.</p>
+          </div>
+
+          <!-- Transformer Block Layer -->
+          <div style="background:var(--code-bg); border:1px solid rgba(34,197,94,0.3); border-radius:0.5rem; padding:1rem">
+            <div style="color:var(--accent-green); font-weight:700; font-size:0.85rem; text-transform:uppercase; margin-bottom:0.5rem">3. TransformerBlock (Module)</div>
+            <div style="font-family:monospace; font-size:0.85rem; color:#f8fafc">
+              <strong style="color:#fff">TransformerBlock</strong>
+              <div style="color:var(--text-muted); font-size:0.75rem; margin:0.25rem 0 0.5rem 0.5rem">
+                ├── <code>ln1: LayerNorm</code><br>
+                ├── <code>attn: MultiHeadAttention</code><br>
+                │ &nbsp; ├── <code>qProj, kProj, vProj: Linear</code><br>
+                │ &nbsp; └── <code>outProj: Linear</code><br>
+                ├── <code>ln2: LayerNorm</code><br>
+                └── <code>ff: FeedForward</code><br>
+                &nbsp; &nbsp; ├── <code>fc1: Linear (C → 4C)</code><br>
+                &nbsp; &nbsp; └── <code>fc2: Linear (4C → C)</code>
+              </div>
+            </div>
+            <p style="font-size:0.78rem; color:var(--text-secondary); margin:0">Executes the dual pre-LN residual cycle: Communication (Attention) + Computation (FeedForward MLP).</p>
+          </div>
+        </div>
+      </div>
+
+      <h2>Method Invocation Call Flow: trainStep()</h2>
+      <p>The sequence below traces all method calls from the moment <code>trainer.trainStep()</code> is invoked:</p>
+
+      <div style="background:rgba(15,23,42,0.8); border:1px solid var(--border-color); border-radius:0.5rem; padding:1.25rem; font-family:monospace; font-size:0.84rem; line-height:1.7; overflow-x:auto; margin-bottom:1.5rem">
+        <div style="color:var(--accent-cyan); font-weight:700">1. trainer.trainStep()</div>
+        <div style="margin-left:1.25rem; color:#cbd5e1">
+          │── calls <strong>trainer.getBatch()</strong> → slices random text window [B, T] inputs &amp; targets<br>
+          │── calls <strong>model.forward(inputs, B, T)</strong> on <code>GPT</code><br>
+          │ &nbsp; ├── calls <strong>tokenEmbedding.forward(indices)</strong> → returns <code>Tensor [B*T, C]</code><br>
+          │ &nbsp; ├── calls <strong>positionEmbedding.forward(positions)</strong> → returns <code>Tensor [B*T, C]</code><br>
+          │ &nbsp; ├── calls <strong>x.add(posEmb)</strong> on <code>Tensor</code> → attaches Add backward closure<br>
+          │ &nbsp; ├── loop over <code>blocks</code>:<br>
+          │ &nbsp; │ &nbsp; └── calls <strong>block.forward(x)</strong> on <code>TransformerBlock</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; ├── calls <strong>ln1.forward(x)</strong> on <code>LayerNorm</code> → normalizes channels<br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; ├── calls <strong>attn.forward(normX)</strong> on <code>MultiHeadAttention</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── calls <strong>qProj.forward(x)</strong>, <strong>kProj.forward(x)</strong>, <strong>vProj.forward(x)</strong> on <code>Linear</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; │ &nbsp; └── calls <code>x.matmul(Wᵀ).add(b)</code> on <code>Tensor</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── calls <code>q.matmul(k.transposeLast2()).mul(scale)</code> on <code>Tensor</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── calls <code>applyCausalMask(scores).softmaxRows()</code> on <code>Tensor</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── calls <code>probs.matmul(v)</code> on <code>Tensor</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; └── calls <strong>outProj.forward(context)</strong> on <code>Linear</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; ├── calls <strong>x.add(attnOut)</strong> on <code>Tensor</code> (Residual Connection 1)<br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; ├── calls <strong>ln2.forward(x)</strong> on <code>LayerNorm</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; ├── calls <strong>ff.forward(normX)</strong> on <code>FeedForward</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── calls <strong>fc1.forward(x)</strong> on <code>Linear</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── calls <code>hidden.gelu()</code> on <code>Tensor</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; └── calls <strong>fc2.forward(act)</strong> on <code>Linear</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; └── calls <strong>x.add(ffOut)</strong> on <code>Tensor</code> (Residual Connection 2)<br>
+          │ &nbsp; ├── calls <strong>lnFinal.forward(x)</strong> on <code>LayerNorm</code><br>
+          │ &nbsp; ├── calls <strong>lmHead.forward(x)</strong> on <code>Linear</code> → projects hidden dim C → vocabSize V<br>
+          │ &nbsp; └── calls <strong>logits.reshape([B, T, V])</strong> on <code>Tensor</code><br>
+          │── calls <strong>lossFn.forward(flatLogits, targets)</strong> on <code>CrossEntropyLoss</code><br>
+          │ &nbsp; ├── calls <code>crossEntropyPerExample(logits, targets)</code> on <code>Operations</code><br>
+          │ &nbsp; └── calls <code>per.mean()</code> on <code>Tensor</code> → returns scalar loss Tensor<br>
+          │── calls <strong>optimizer.zeroGrad()</strong> on <code>AdamW</code><br>
+          │ &nbsp; └── iterates <code>model.parameters()</code>, calls <strong>p.zeroGrad()</strong> on each <code>Tensor</code><br>
+          │── calls <strong>loss.backward()</strong> on <code>Tensor</code><br>
+          │ &nbsp; ├── builds topological sort DAG list via Depth-First Search<br>
+          │ &nbsp; └── iterates reverse topo order: runs <strong>gradFn(g)</strong> closures, accumulating into <code>.grad</code><br>
+          │── calls <strong>optimizer.step()</strong> on <code>AdamW</code><br>
+          │ &nbsp; └── updates each <code>p.data[i]</code> via bias-corrected momentum and decoupled weight decay<br>
+          └── calls <strong>loss.item()</strong> on <code>Tensor</code> → returns float loss value for logging
+        </div>
+      </div>
+
+      <h2>Method Invocation Call Flow: generate()</h2>
+      <p>The sequence below traces autoregressive character generation:</p>
+
+      <div style="background:rgba(15,23,42,0.8); border:1px solid var(--border-color); border-radius:0.5rem; padding:1.25rem; font-family:monospace; font-size:0.84rem; line-height:1.7; overflow-x:auto; margin-bottom:1.5rem">
+        <div style="color:var(--accent-purple); font-weight:700">1. trainer.generate(prompt, maxNewTokens, temperature)</div>
+        <div style="margin-left:1.25rem; color:#cbd5e1">
+          │── calls <strong>tokenizer.encode(prompt)</strong> → string to integer token IDs array [t₁, t₂, ...]<br>
+          │── calls <strong>model.generate(ids, maxNewTokens, temperature)</strong> on <code>GPT</code><br>
+          │ &nbsp; └── loop 0 .. maxNewTokens:<br>
+          │ &nbsp; &nbsp; &nbsp; ├── crops context window to last <code>blockSize = 32</code> tokens<br>
+          │ &nbsp; &nbsp; &nbsp; ├── calls <strong>this.forward(cond, B=1, T=cond.length)</strong> → computes logits [1, T, V]<br>
+          │ &nbsp; &nbsp; &nbsp; ├── reads last row: <code>logits.data[lastRow .. lastRow + V]</code><br>
+          │ &nbsp; &nbsp; &nbsp; ├── if temperature ≤ 1e-9: greedy <strong>argmax(logits)</strong><br>
+          │ &nbsp; &nbsp; &nbsp; ├── else: scale by <code>z / T</code>, apply softmax, and sample from probability distribution<br>
+          │ &nbsp; &nbsp; &nbsp; └── <code>out.push(sampledId)</code><br>
+          └── calls <strong>tokenizer.decode(out)</strong> → integer token IDs array back to generated string
+        </div>
+      </div>
+
+      <div class="chapter-nav-footer">
+        <button class="btn btn-secondary btn-prev-chapter">← miniGPT Chapter 3</button>
+        <button class="btn btn-primary btn-next-chapter">Next: SmolLM Inference Chapter 1 — Prefill vs Decode →</button>
+      </div>
+    </article>
+
+<!-- ================= SMOLLM CHAPTER 1 ================= -->
+    <article class="chapter-container" data-chapter="smollm-1">
+      <div style="margin-bottom:1.5rem">
+        <span class="badge badge-cyan">Chapter 1</span>
+        <span class="badge badge-blue" style="margin-left:0.5rem">SmolLM Inference</span>
+        <h1>The Two Inference Phases: Prefill vs. Decode</h1>
+        <p style="font-size:1.1rem; color:var(--text-primary)">Why production LLM inference is strictly divided into compute-bound prompt evaluation (GEMM) and memory bandwidth-bound token generation (GEMV).</p>
+      </div>
+
+      <div class="primer-card">
+        <h4>💡 Concept Primer: The Physics of Inference</h4>
+        <p><strong>Why are there two distinct phases?</strong> An LLM does not execute the same computational workload throughout generation. Evaluating an initial prompt is <em>Compute-Bound</em>: hundreds of tokens are processed simultaneously in parallel matrix multiplications (GEMM). Generating new tokens is <em>Memory Bandwidth-Bound</em>: only 1 token is processed per step, requiring the CPU to stream millions of parameter bytes from RAM for each matrix-vector product (GEMV).</p>
+        <p><strong>Why project only the last token in prefill?</strong> If a prompt has 10 tokens, intermediate layers must compute hidden states for all 10 tokens so they can populate the KV cache. However, to pick token #11, we only need the logits of token #10! Projecting only the final token hidden state (<code class="inline-math">M = 1</code>) to the 49,152 vocabulary logits saves over 80% matrix-vector multiply operations during prefill!</p>
+      </div>
+
+      <h2>The Two Phases of Inference</h2>
+      <p>Modern LLM inference is strictly divided into two distinct computational phases:</p>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin:1.5rem 0">
+        <div style="background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:0.75rem; padding:1.25rem">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem">
+            <h3 style="margin:0; color:var(--accent-cyan)">1. Prefill Phase</h3>
+            <span class="badge badge-cyan">Compute-Bound</span>
+          </div>
+          <p style="font-size:0.9rem">Takes the user's initial prompt (e.g. 10 words) and processes all tokens in parallel. Computes Key and Value projections, populates the KV-Cache, and computes logits only for the final token to sample token #11.</p>
+          <div style="font-family:monospace; font-size:0.8rem; color:var(--accent-amber); background:var(--code-bg); padding:0.5rem; border-radius:0.35rem">
+            Input: [Batch=1, SeqLen=S, Dim=576]<br>
+            Operations: Matrix × Matrix (GEMM)
+          </div>
+        </div>
+
+        <div style="background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:0.75rem; padding:1.25rem">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem">
+            <h3 style="margin:0; color:var(--accent-green)">2. Decode Phase</h3>
+            <span class="badge badge-green">Memory Bandwidth-Bound</span>
+          </div>
+          <p style="font-size:0.9rem">Generates tokens one-by-one. In each step, exactly <strong>1 token</strong> (<code class="inline-math">S = 1</code>) is projected through the 30 layers, attending to previously cached tokens. 99% of execution time is spent here doing Matrix-Vector products.</p>
+          <div style="font-family:monospace; font-size:0.8rem; color:var(--accent-green); background:var(--code-bg); padding:0.5rem; border-radius:0.35rem">
+            Input: [Batch=1, SeqLen=1, Dim=576]<br>
+            Operations: Matrix × Vector (GEMV)
+          </div>
+        </div>
+      </div>
+
+      <h2>High-Level Inference Architecture</h2>
+      <div class="code-container">
+        <div class="code-header">
+          <span class="file-path">projects/smollm-inference/engine/inference-engine.ts</span>
+          <span>Orchestrator Facade</span>
+        </div>
+        <pre class="code-content"><code>// High-level orchestration in TypescriptLLM
+export class InferenceEngine {
+  public async generate(request: GenerationRequest): Promise&lt;GenerationResult&gt; {
+    // 1. Reset KV-Cache
+    this.kvCache.reset();
+
+    // 2. Tokenize prompt
+    const promptTokens = await this.tokenizer.encode(request.prompt);
+
+    // 3. Phase 1: Prefill prompt tokens
+    const prefillLogits = this.model.forward(promptTokens, 0, this.kvCache, false);
+    let currentToken = sampler.sample(prefillLogits, promptTokens);
+
+    // 4. Phase 2: Autoregressive single-token decode loop
+    while (generatedTokens.length &lt; maxTokens) {
+      if (currentToken === this.tokenizer.eosTokenId) break;
+      onToken(await this.tokenizer.decode([currentToken]));
+
+      const stepLogits = this.model.forward([currentToken], currentPos, this.kvCache);
+      currentToken = sampler.sample(stepLogits, contextTokens);
+      currentPos++;
+    }
+  }
+}</code></pre>
+      </div>
+
+      <div class="chapter-nav-footer">
+        <button class="btn btn-secondary btn-prev-chapter">← miniGPT Chapter 4</button>
+        <button class="btn btn-primary btn-next-chapter">Next: SmolLM Inference Chapter 2 — What is the KV Cache? →</button>
+      </div>
+    </article>
+
+<!-- ================= CHAPTER 5 ================= -->
+    <article class="chapter-container" data-chapter="smollm-2">
+      <div style="margin-bottom:1.5rem">
+        <span class="badge badge-cyan">Chapter 2</span>
+        <span class="badge badge-blue" style="margin-left:0.5rem">SmolLM Inference</span>
+        <h1>Memory Acceleration: What is the KV Cache?</h1>
+        <p style="font-size:1.1rem; color:var(--text-primary)">Eliminating quadratic <em>O</em>(<em>N</em><sup>2</sup>) recomputations with pre-allocated state buffers.</p>
+      </div>
+
+      <div class="primer-card">
+        <h4>💡 Concept Primer: What is the KV Cache?</h4>
+        <p><strong>Definition:</strong> The Key-Value (KV) cache is an internal memory buffer that stores previously computed Key and Value vectors across all layers of the Transformer.</p>
+        <p><strong>Why is it necessary?</strong> Without a cache, generating token #100 requires re-running attention for all 99 prior tokens, causing an <em>O</em>(<em>N</em><sup>2</sup>) quadratic explosion in computation time. With a KV cache, previous Keys and Values are saved, meaning generating token #100 only requires running the model on token #99!</p>
+        <p><strong>How is it implemented in TypescriptLLM?</strong> <code>KVCacheManager</code> pre-allocates flat <code>Float32Array</code> buffers for all 30 layers up to sequence length <code class="inline-math">2048</code>. Appending new tokens is a single contiguous copy with zero memory reallocations!</p>
+      </div>
+
+      <h2>Interactive Widget: KV Cache Growth Simulator</h2>
+      <p>Click "Append Next Token" to watch how newly generated tokens write directly into the pre-allocated cache slots without reallocating arrays:</p>
+
+      <div class="sandbox-card">
+        <div class="sandbox-header">
+          <div class="sandbox-title"><span>⚡</span> Stateful Layer KV-Cache Buffer</div>
+          <div>Active Sequence Length: <strong id="kv-seq-len" style="color:var(--accent-cyan)">5</strong> / 10</div>
+        </div>
+
+        <div id="kv-cache-slots" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:0.5rem; margin-bottom:1rem"></div>
+
+        <div style="display:flex; gap:0.75rem">
+          <button id="kv-append-btn" class="btn btn-primary">+ Append Next Token (Decode Step)</button>
+          <button id="kv-reset-btn" class="btn btn-secondary">Reset Cache</button>
+        </div>
+      </div>
+
+      <h2>Pre-allocated Memory Layout</h2>
+      <div class="code-container">
+        <div class="code-header">
+          <span class="file-path">src/core/kv-cache.ts</span>
+          <span>Zero-Allocation Append</span>
+        </div>
+        <pre class="code-content"><code>// Append incoming Key/Value projections into pre-allocated memory
+public append(layerIdx: number, keys: Tensor, values: Tensor): number {
+  const layer = this.layers[layerIdx];
+  const incomingTokens = keys.size / this.kvDim;
+  const startOffset = layer.currentSeqLen * this.kvDim;
+  const numElements = incomingTokens * this.kvDim;
+
+  // Single fast typed array copy
+  layer.keyCache.data.set(keys.data.subarray(0, numElements), startOffset);
+  layer.valueCache.data.set(values.data.subarray(0, numElements), startOffset);
+
+  layer.currentSeqLen += incomingTokens;
+  return layer.currentSeqLen;
+}</code></pre>
+      </div>
+
+      <div class="chapter-nav-footer">
+        <button class="btn btn-secondary btn-prev-chapter">← SmolLM Inference Chapter 1</button>
+        <button class="btn btn-primary btn-next-chapter">Next: SmolLM Inference Chapter 3 — RoPE &amp; Grouped-Query Attention →</button>
+      </div>
+    </article>
+
+<!-- ================= CHAPTER 4 ================= -->
+    <article class="chapter-container" data-chapter="smollm-3">
+      <div style="margin-bottom:1.5rem">
+        <span class="badge badge-cyan">Chapter 3</span>
+        <span class="badge badge-blue" style="margin-left:0.5rem">SmolLM Inference</span>
+        <h1>The Core Engine: Transformer Block</h1>
+        <p style="font-size:1.1rem; color:var(--text-primary)">RMSNorm, Rotary Embeddings (RoPE), Grouped-Query Attention (GQA), and SwiGLU MLP.</p>
+      </div>
+
+      <div class="primer-card">
+        <h4>💡 Concept Primer: Inside the Transformer Block</h4>
+        <p><strong>What is a Transformer Block?</strong> It is the foundational computational module repeated 30 times in SmolLM-135M. Each block takes token representations, updates them with attention context from other tokens, expands them through a feed-forward network, and passes them to the next layer.</p>
+        <p><strong>1. RMSNorm:</strong> Normalizes hidden values so activations don't explode or vanish across 30 deep layers. Why omit mean centering? Removing mean subtraction saves CPU cycles with identical accuracy.</p>
+        <p><strong>2. RoPE (Rotary Position Embeddings):</strong> Attention has no inherent sense of order—it sees tokens as an unordered bag of words. RoPE rotates Query and Key vector pairs in the complex plane proportional to token position <em>m</em>, preserving vector magnitude.</p>
+        <p><strong>3. Grouped-Query Attention (GQA):</strong> SmolLM uses 9 Query heads and 3 Key/Value heads. Three Query heads share one KV head, reducing memory bandwidth by 66%!</p>
+        <p><strong>4. SwiGLU MLP:</strong> Gated activation combining <code class="inline-math">silu(x &middot; W<sub>gate</sub>) &odot; (x &middot; W<sub>up</sub>)</code>, projecting non-linear features up to dimension <code class="inline-math">1536</code> and back to <code class="inline-math">576</code>.</p>
+      </div>
+
+      <h2>Interactive Architecture Diagram: Inside the Transformer Block</h2>
+      <p>The diagram below illustrates the exact forward dataflow through a single Transformer Block in SmolLM-135M. Click or hover over any building block to inspect its role, math formula, and TypeScript source file:</p>
+
+      <div class="sandbox-card">
+        <div class="sandbox-header">
+          <div class="sandbox-title"><span>🧩</span> Transformer Layer Dataflow &amp; Connections</div>
+          <span class="badge badge-purple">Repeated 30&times; Across Network</span>
+        </div>
+
+        <div class="diagram-container">
+          <!-- Flowchart SVG Column -->
+          <div class="transformer-svg-card">
+            <svg id="transformer-svg" viewBox="0 0 380 720" width="100%" height="720" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <marker id="arrow-main" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 1 L 8 5 L 0 9 z" fill="#64748b"/>
+                </marker>
+                <marker id="arrow-res" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 1 L 8 5 L 0 9 z" fill="#22c55e"/>
+                </marker>
+              </defs>
+
+              <!-- Layer Boundary Container (30x) -->
+              <rect x="36" y="82" width="316" height="526" rx="12" fill="rgba(15, 23, 42, 0.45)" stroke="#334155" stroke-dasharray="6,4" stroke-width="1.2"/>
+              <rect x="48" y="72" width="194" height="20" rx="4" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+              <text x="56" y="86" fill="#a855f7" font-size="10" font-weight="700" font-family="-apple-system, sans-serif">TRANSFORMER BLOCK (30×)</text>
+
+              <!-- 1. Input Node -->
+              <g class="svg-node" data-block="input">
+                <rect x="60" y="16" width="220" height="48" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
+                <text x="170" y="34" text-anchor="middle" fill="#94a3b8" font-size="9" font-weight="700" letter-spacing="0.5">INPUT REPRESENTATION</text>
+                <text x="170" y="52" text-anchor="middle" fill="#f8fafc" font-size="12.5" font-weight="700">Input Activations (X) [S, 576]</text>
+              </g>
+
+              <!-- Trunk 1: Input to RMSNorm 1 -->
+              <line x1="170" y1="64" x2="170" y2="120" stroke="#64748b" stroke-width="2" marker-end="url(#arrow-main)"/>
+              
+              <!-- Split 1 connection dot -->
+              <circle cx="170" cy="94" r="3.5" fill="#22c55e"/>
+
+              <!-- Residual Path 1 -->
+              <path d="M 170, 94 L 316, 94 A 12 12 0 0 1 328, 106 L 328, 298 A 12 12 0 0 1 316, 310 L 194, 310" 
+                    fill="none" stroke="#22c55e" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrow-res)"/>
+              
+              <g class="svg-res-label" data-block="add1">
+                <rect x="246" y="196" width="124" height="22" rx="4" fill="#0f172a" stroke="#22c55e" stroke-width="1.2"/>
+                <text x="308" y="211" text-anchor="middle" fill="#22c55e" font-size="9.5" font-weight="700">Residual Bypass 1 (X)</text>
+              </g>
+
+              <!-- 2. RMSNorm 1 -->
+              <g class="svg-node node-norm" data-block="rmsnorm1">
+                <rect x="60" y="122" width="220" height="46" rx="8" fill="rgba(168, 85, 247, 0.12)" stroke="#a855f7" stroke-width="1.5"/>
+                <text x="170" y="139" text-anchor="middle" fill="#c084fc" font-size="9" font-weight="700" letter-spacing="0.5">PRE-ATTENTION NORM</text>
+                <text x="170" y="157" text-anchor="middle" fill="#fff" font-size="12.5" font-weight="700">RMSNorm 1 (input_layernorm)</text>
+              </g>
+
+              <!-- Trunk 2: RMSNorm 1 to Attention -->
+              <line x1="170" y1="168" x2="170" y2="198" stroke="#64748b" stroke-width="2" marker-end="url(#arrow-main)"/>
+
+              <!-- 3. GQA Attention -->
+              <g class="svg-node node-attn" data-block="attn">
+                <rect x="60" y="198" width="220" height="74" rx="8" fill="rgba(56, 189, 248, 0.12)" stroke="#38bdf8" stroke-width="1.5"/>
+                <text x="170" y="217" text-anchor="middle" fill="#38bdf8" font-size="9" font-weight="700" letter-spacing="0.5">CONTEXTUAL MIXING</text>
+                <text x="170" y="236" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">Grouped-Query Attention (GQA)</text>
+                <text x="170" y="258" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="monospace">W_q, W_k, W_v • RoPE • KV • W_o</text>
+              </g>
+
+              <!-- Trunk 3: Attention to Add 1 -->
+              <line x1="170" y1="272" x2="170" y2="292" stroke="#64748b" stroke-width="2" marker-end="url(#arrow-main)"/>
+
+              <!-- 4. Add 1 Node (+) -->
+              <g class="svg-node-add" data-block="add1">
+                <circle cx="170" cy="310" r="17" fill="rgba(34, 197, 94, 0.15)" stroke="#22c55e" stroke-width="2"/>
+                <text x="170" y="316" text-anchor="middle" fill="#22c55e" font-size="18" font-weight="700">+</text>
+              </g>
+
+              <!-- Trunk 4: Add 1 to RMSNorm 2 -->
+              <line x1="170" y1="327" x2="170" y2="394" stroke="#64748b" stroke-width="2" marker-end="url(#arrow-main)"/>
+              
+              <!-- Split 2 connection dot -->
+              <circle cx="170" cy="358" r="3.5" fill="#22c55e"/>
+              <text x="122" y="352" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="monospace">h = X + Attn</text>
+
+              <!-- Residual Path 2 -->
+              <path d="M 170, 358 L 316, 358 A 12 12 0 0 1 328, 370 L 328, 548 A 12 12 0 0 1 316, 560 L 194, 560" 
+                    fill="none" stroke="#22c55e" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrow-res)"/>
+              
+              <g class="svg-res-label" data-block="add2">
+                <rect x="246" y="458" width="124" height="22" rx="4" fill="#0f172a" stroke="#22c55e" stroke-width="1.2"/>
+                <text x="308" y="473" text-anchor="middle" fill="#22c55e" font-size="9.5" font-weight="700">Residual Bypass 2 (h)</text>
+              </g>
+
+              <!-- 5. RMSNorm 2 -->
+              <g class="svg-node node-norm" data-block="rmsnorm2">
+                <rect x="60" y="396" width="220" height="46" rx="8" fill="rgba(168, 85, 247, 0.12)" stroke="#a855f7" stroke-width="1.5"/>
+                <text x="170" y="413" text-anchor="middle" fill="#c084fc" font-size="9" font-weight="700" letter-spacing="0.5">PRE-MLP NORM</text>
+                <text x="170" y="431" text-anchor="middle" fill="#fff" font-size="12.5" font-weight="700">RMSNorm 2 (post_attn_norm)</text>
+              </g>
+
+              <!-- Trunk 5: RMSNorm 2 to MLP -->
+              <line x1="170" y1="442" x2="170" y2="472" stroke="#64748b" stroke-width="2" marker-end="url(#arrow-main)"/>
+
+              <!-- 6. SwiGLU MLP -->
+              <g class="svg-node node-mlp" data-block="mlp">
+                <rect x="60" y="472" width="220" height="74" rx="8" fill="rgba(245, 158, 11, 0.12)" stroke="#f59e0b" stroke-width="1.5"/>
+                <text x="170" y="491" text-anchor="middle" fill="#f59e0b" font-size="9" font-weight="700" letter-spacing="0.5">FEED-FORWARD NETWORK</text>
+                <text x="170" y="510" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">SwiGLU Gated MLP</text>
+                <text x="170" y="532" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="monospace">gate_proj • SiLU • up_proj • down_proj</text>
+              </g>
+
+              <!-- Trunk 6: MLP to Add 2 -->
+              <line x1="170" y1="546" x2="170" y2="552" stroke="#64748b" stroke-width="2" marker-end="url(#arrow-main)"/>
+
+              <!-- 7. Add 2 Node (+) -->
+              <g class="svg-node-add" data-block="add2">
+                <circle cx="170" cy="560" r="17" fill="rgba(34, 197, 94, 0.15)" stroke="#22c55e" stroke-width="2"/>
+                <text x="170" y="566" text-anchor="middle" fill="#22c55e" font-size="18" font-weight="700">+</text>
+              </g>
+
+              <!-- Trunk 7: Add 2 to Output -->
+              <line x1="170" y1="577" x2="170" y2="638" stroke="#64748b" stroke-width="2" marker-end="url(#arrow-main)"/>
+              <text x="116" y="608" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="monospace">out = h + MLP</text>
+
+              <!-- 8. Output Node -->
+              <g class="svg-node" data-block="output">
+                <rect x="60" y="640" width="220" height="48" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+                <text x="170" y="658" text-anchor="middle" fill="#38bdf8" font-size="9" font-weight="700" letter-spacing="0.5">OUTPUT REPRESENTATION</text>
+                <text x="170" y="676" text-anchor="middle" fill="#f8fafc" font-size="12.5" font-weight="700">Output → Next Block [S, 576]</text>
+              </g>
+            </svg>
+          </div>
+
+          <!-- Inspector Column -->
+          <div class="diagram-inspector" id="diagram-inspector">
+            <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.75rem; font-weight:700">
+              Interactive Block Inspector (Click Any Block)
+            </div>
+            <div id="diagram-inspector-content">
+              <!-- Populated dynamically by widgets.js -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2>Interactive Widget: Rotary Position Embedding (RoPE)</h2>
+      <p>Drag the token position slider below to watch the 2D vector rotate on the unit circle. Notice that its length (<code>||v||<sub>2</sub></code>) remains strictly constant (<code class="inline-math">1.000</code>):</p>
+
+      <div class="sandbox-card">
+        <div class="sandbox-header">
+          <div class="sandbox-title"><span>🔄</span> RoPE 2D Vector Rotation on the Unit Circle</div>
+        </div>
+
+        <div style="display:flex; gap:2rem; align-items:center; flex-wrap:wrap">
+          <canvas id="rope-canvas" width="220" height="220" style="background:var(--code-bg); border-radius:0.5rem; border:1px solid var(--border-color)"></canvas>
+
+          <div style="flex:1; min-width:240px">
+            <div class="slider-group">
+              <div class="slider-label">
+                <span>Token Sequence Position (<em>m</em>)</span>
+                <strong id="rope-pos-val" style="color:var(--accent-cyan)">0</strong>
+              </div>
+              <input type="range" id="rope-pos-slider" class="slider-input" min="0" max="16" value="0">
+            </div>
+
+            <div style="background:var(--code-bg); padding:0.75rem 1rem; border-radius:0.5rem; font-family:monospace; font-size:0.85rem; border:1px solid var(--border-color)">
+              <div>Rotation Angle: <strong id="rope-angle-val" style="color:var(--accent-cyan)">0.0°</strong></div>
+              <div>Vector L2 Norm: <strong id="rope-norm-val" style="color:var(--accent-green)">1.000</strong> (Isometry preserved!)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2>Grouped-Query Attention Projection</h2>
+      <div class="code-container">
+        <div class="code-header">
+          <span class="file-path">src/layers/attention.ts</span>
+          <span>GQA Head Mapping</span>
+        </div>
+        <pre class="code-content"><code>// SmolLM-135M: 9 Query Heads, 3 KV Heads (numGroups = 3)
+const numGroups = Math.floor(numHeads / numKvHeads); // 9 / 3 = 3
+
+for (let hq = 0; hq &lt; numHeads; hq++) {
+  // Map Query Head to its shared Key/Value Head
+  const hkv = Math.floor(hq / numGroups);
+
+  // Scaled Dot Product with causal constraint
+  for (let t = 0; t &lt;= currentPos; t++) {
+    scores[t] = dotProduct(Q[hq], K_cached[t][hkv]) * scale;
+  }
+}</code></pre>
+      </div>
+
+      <div class="chapter-nav-footer">
+        <button class="btn btn-secondary btn-prev-chapter">← SmolLM Inference Chapter 2</button>
+        <button class="btn btn-primary btn-next-chapter">Next: Chapter 5 — What is the KV Cache? →</button>
+      </div>
+    </article>
+
+<!-- ================= CHAPTER 6 ================= -->
+    <article class="chapter-container" data-chapter="smollm-4">
+      <div style="margin-bottom:1.5rem">
+        <span class="badge badge-cyan">Chapter 4</span>
+        <span class="badge badge-blue" style="margin-left:0.5rem">SmolLM Inference</span>
+        <h1>SafeTensors &amp; BF16 On-The-Fly Math</h1>
+        <p style="font-size:1.1rem; color:var(--text-primary)">Binary format parsing, header JSON, and zero-math BF16 to Float32 conversion.</p>
+      </div>
+
+      <div class="primer-card">
+        <h4>💡 Concept Primer: Weights &amp; Binary File Formats</h4>
+        <p><strong>What are Model Weights?</strong> The trained numerical parameters (134 million values in SmolLM-135M) representing the learned knowledge of the neural network.</p>
+        <p><strong>What is SafeTensors and why not Pickle?</strong> Traditional PyTorch <code>.bin</code> files use Python <code>pickle</code>, which can execute malicious arbitrary code upon deserialization. SafeTensors is an open, pure binary format: an 8-byte length header, a JSON metadata dictionary, followed by raw contiguous byte buffers.</p>
+        <p><strong>What is BFloat16 vs Float32?</strong> Standard Float32 uses 32 bits (1 sign, 8 exponent, 23 mantissa). BFloat16 uses 16 bits (1 sign, 8 exponent, 7 mantissa). Because the exponent size is identical, converting BF16 to Float32 simply requires shifting bits left by 16: <code>uint16 &lt;&lt; 16</code>!</p>
+      </div>
+
+      <h2>Interactive Widget: BFloat16 Bit Inspector</h2>
+      <p>Toggle any of the 16 bits below to see how shifting left by 16 bits maps directly into IEEE 754 Float32:</p>
+
+      <div class="sandbox-card">
+        <div class="sandbox-header">
+          <div class="sandbox-title"><span>🔢</span> 16-Bit BF16 (Sign: Red, Exponent: Purple, Mantissa: Blue)</div>
+        </div>
+
+        <div id="bf16-bits-container" style="margin-bottom:1.25rem"></div>
+
+        <div style="background:var(--code-bg); padding:0.75rem 1rem; border-radius:0.5rem; font-family:monospace; font-size:0.85rem; border:1px solid var(--border-color)">
+          <div>Decoded Float32 Value: <strong id="bf16-value-display" style="color:var(--accent-green); font-size:1.1rem">1.0000</strong></div>
+          <div style="color:var(--text-muted); margin-top:0.25rem">Bitwise Shift: <span id="bf16-shift-display" style="color:var(--accent-cyan)">0x3F80 &lt;&lt; 16 = 0x3F800000</span></div>
+        </div>
+      </div>
+
+      <h2>On-The-Fly Conversion Loop</h2>
+      <div class="code-container">
+        <div class="code-header">
+          <span class="file-path">src/io/safetensors.ts</span>
+          <span>Zero-Math BF16 to F32</span>
+        </div>
+        <pre class="code-content"><code>// BF16 to Float32 conversion in Node.js
+const numFloats = byteLength / 2;
+const f32Data = new Float32Array(numFloats);
+const u32View = new Uint32Array(f32Data.buffer); // Shared ArrayBuffer!
+
+for (let i = 0; i &lt; numFloats; i++) {
+  const bf16Val = slice.readUInt16LE(i * 2);
+  u32View[i] = bf16Val &lt;&lt; 16; // Instant Float32 population!
+}</code></pre>
+      </div>
+
+      <div class="chapter-nav-footer">
+        <button class="btn btn-secondary btn-prev-chapter">← SmolLM Inference Chapter 3</button>
+        <button class="btn btn-primary btn-next-chapter">Next: SmolLM Inference Chapter 5 — Live Inference Simulator →</button>
+      </div>
+    </article>
+
+<!-- ================= CHAPTER 8 ================= -->
+    <article class="chapter-container" data-chapter="smollm-5">
+      <div style="margin-bottom:1.5rem">
+        <span class="badge badge-cyan">Chapter 5</span>
+        <span class="badge badge-blue" style="margin-left:0.5rem">SmolLM Inference</span>
+        <h1>Live Inference Simulator</h1>
+        <p style="font-size:1.1rem; color:var(--text-primary)">Interactive tensor execution trace from prompt tokenization through 30 Transformer blocks to streaming token generation.</p>
+      </div>
+
+      <div class="primer-card">
+        <h4>💡 Putting It All Together: The Complete Inference Lifecycle</h4>
+        <p>In modern LLM inference, generation proceeds in two distinct operational phases:</p>
+        <ul style="margin:0.5rem 0 0.5rem 1.5rem; line-height:1.6; color:#cbd5e1">
+          <li><strong>Prefill Phase (Prompt Evaluation):</strong> All prompt tokens are processed together in parallel. Key and Value vectors for every token across all 30 layers are stored into the <code>KVCacheManager</code>. Logits are computed for the final prompt token to predict the first new token (Compute-bound GEMM).</li>
+          <li><strong>Decode Phase (Autoregressive Generation):</strong> Tokens are generated one by one. The newly generated token is fed into the model with <code class="inline-math">M = 1</code>. Past keys and values are retrieved from the KV-cache, avoiding recomputation. Only 1 row is computed per layer using fast 8-way unrolled GEMV (Memory-bandwidth bound).</li>
+        </ul>
+      </div>
+
+      <!-- SIMULATOR CONTROL BAR -->
+      <div class="simulator-card">
+        <div class="sandbox-header">
+          <div class="sandbox-title"><span>🚀</span> Live Interactive Inference Engine</div>
+          <div id="sim-phase-badge" class="badge badge-cyan">Prefill Phase</div>
+        </div>
+
+        <div class="sim-controls-bar">
+          <div style="display:flex; gap:1rem; align-items:flex-end; flex-wrap:wrap; margin-bottom:1rem">
+            <div style="flex:1; min-width:240px">
+              <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:0.35rem">Select Prompt Scenario:</label>
+              <select id="sim-prompt-select" class="form-control">
+                <option value="paris">"The capital of France is" (Geography)</option>
+                <option value="water">"The boiling point of water is" (Science)</option>
+                <option value="math">"2 + 2 =" (Arithmetic)</option>
+                <option value="sun">"The sun rises in the" (Nature)</option>
+                <option value="custom">Custom Prompt...</option>
+              </select>
+            </div>
+
+            <div id="sim-custom-prompt-wrap" style="flex:1.5; min-width:260px; display:none">
+              <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:0.35rem">Custom Input Prompt:</label>
+              <div style="display:flex; gap:0.5rem">
+                <input type="text" id="sim-custom-input" class="form-control" placeholder="Enter custom prompt..." value="Artificial intelligence is">
+                <button id="sim-custom-apply-btn" class="btn btn-secondary" style="white-space:nowrap">Apply</button>
+              </div>
+            </div>
+
+            <div style="min-width:180px">
+              <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:0.35rem">Sampling Strategy:</label>
+              <select id="sim-sampler-select" class="form-control">
+                <option value="greedy">Greedy (Argmax, T = 0.0)</option>
+                <option value="nucleus">Nucleus (T = 0.7, Top-P = 0.9)</option>
+              </select>
+            </div>
+
+            <div style="min-width:130px">
+              <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:0.35rem">Speed:</label>
+              <select id="sim-speed-select" class="form-control">
+                <option value="1200">Slow (1.2s)</option>
+                <option value="600" selected>Normal (0.6s)</option>
+                <option value="250">Fast (0.25s)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap">
+            <button id="sim-play-btn" class="btn btn-primary" style="min-width:120px">▶ Auto Play</button>
+            <button id="sim-step-sublayer-btn" class="btn btn-secondary">Step Sub-Layer →</button>
+            <button id="sim-step-token-btn" class="btn btn-secondary">Step Full Token ⏩</button>
+            <button id="sim-reset-btn" class="btn btn-outline">↺ Reset</button>
+            <div id="sim-status-text" style="font-size:0.85rem; color:var(--text-secondary); margin-left:auto; font-family:monospace">Ready</div>
+          </div>
+        </div>
+
+        <!-- PIPELINE TRACK -->
+        <div class="pipeline-track-container">
+          <div class="pipeline-track" id="pipeline-track"></div>
+        </div>
+
+        <!-- TOP DASHBOARD ROW -->
+        <div class="sim-dashboard-grid">
+          <!-- Token Sequence & Inspector -->
+          <div class="sim-panel">
+            <div class="sim-panel-header">
+              <span>📝 Token Sequence &amp; KV Slots</span>
+              <span id="sim-seq-counter" style="font-size:0.8rem; color:var(--accent-cyan); font-family:monospace">5 tokens (Pos 0..4)</span>
+            </div>
+
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.5rem">Click any token badge to inspect token ID &amp; KV-cache memory address:</div>
+            <div id="sim-token-stream" class="sim-token-stream-box"></div>
+
+            <div id="sim-token-inspector" class="sim-token-detail-card" style="display:none"></div>
+          </div>
+
+          <!-- Active Sub-Layer Execution Details -->
+          <div class="sim-panel">
+            <div class="sim-panel-header">
+              <span>⚙️ Active Sub-Layer Execution</span>
+              <span id="sim-layer-counter" class="badge badge-purple" style="font-size:0.75rem">Layer 0 / 30</span>
+            </div>
+
+            <div id="sim-sublayer-details"></div>
+          </div>
+        </div>
+
+        <!-- BOTTOM DASHBOARD ROW -->
+        <div class="sim-dashboard-grid">
+          <!-- Probability Candidates Chart -->
+          <div class="sim-panel">
+            <div class="sim-panel-header">
+              <span>🎯 Next Token Probability Distribution</span>
+              <span id="sim-vocab-badge" style="font-size:0.75rem; color:var(--text-muted)">Vocab: 49,152</span>
+            </div>
+            <div id="sim-logits-container" style="min-height:165px; display:flex; flex-direction:column; justify-content:center"></div>
+          </div>
+
+          <!-- Telemetry & Memory Bandwidth -->
+          <div class="sim-panel">
+            <div class="sim-panel-header">
+              <span>📊 Pure TypeScript Hardware Telemetry</span>
+              <span class="badge badge-green" style="font-size:0.75rem">CPU Engine</span>
+            </div>
+            <div id="sim-telemetry-container"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <h2>How to Run TypescriptLLM in Terminal</h2>
+      <div class="code-container">
+        <div class="code-header">
+          <span>Terminal Execution Commands</span>
+        </div>
+        <pre class="code-content"><code># Run interactive CLI with prompt and streaming
+npm start -- --prompt "The capital of France is" --max-tokens 15 --temperature 0
+
+# Or execute with node on compiled JavaScript
+node dist/index.js --prompt "The boiling point of water is" --max-tokens 10 --temperature 0</code></pre>
+      </div>
+
+
+      <div class="chapter-nav-footer">
+        <button class="btn btn-secondary btn-prev-chapter">← SmolLM Inference Chapter 4</button>
+        <button class="btn btn-primary btn-next-chapter">Next: SmolLM Inference Chapter 6 — Architecture Call Graph →</button>
+      </div>
+    </article>
+
+<!-- ================= CHAPTER 9 ================= -->
+    <article class="chapter-container" data-chapter="smollm-6">
+      <div style="margin-bottom:1.5rem">
+        <span class="badge badge-cyan">Chapter 6</span>
+        <span class="badge badge-blue" style="margin-left:0.5rem">SmolLM Inference</span>
+        <span class="badge badge-blue" style="margin-left:0.5rem">SmolLM Inference</span>
+        <h1>Class &amp; Object Architecture Call Graph</h1>
+        <p style="font-size:1.1rem; color:var(--text-primary)">Complete object hierarchy, Builder pattern composition, and method invocation call flows across prefill and decode inference.</p>
+      </div>
+
+      <!-- Concept Primer -->
+      <div class="primer-card">
+        <h4>💡 Concept Primer: Architecture &amp; Design Patterns of SmolLM Inference</h4>
+        <p><strong>What design patterns are used in TypescriptLLM?</strong> The engine employs four core software patterns: (1) <em>Facade Pattern</em> via <code>InferenceEngine</code>, abstracting tokenization, prefill, decode loops, and streaming into a clean API; (2) <em>Builder Pattern</em> via <code>ModelBuilder</code>, assembling 30 Transformer layers with decoupled configurations; (3) <em>Factory Pattern</em> via <code>SamplerFactory</code>, isolating temperature and top-p/top-k logic; and (4) <em>Composite Pattern</em> via the abstract <code>Module</code> base class.</p>
+        <p><strong>How do Prefill and Decode differ structurally?</strong> In the Prefill phase, the full sequence of prompt tokens is processed concurrently to populate the KV cache, but <strong>only the final token</strong> is projected to vocabulary logits. In the Decode phase, exactly one token is processed per step, performing Matrix-Vector (GEMV) operations while attending to past KV slices without recomputing earlier tokens.</p>
+        <p><strong>Why is the Key-Value Cache decoupled from layers?</strong> Rather than storing state within each attention module, <code>KVCacheManager</code> pre-allocates continuous Float32Array buffers for all 30 layers at initialization. This eliminates garbage collection thrashing during real-time autoregressive generation.</p>
+      </div>
+
+      <h2>Object Composition &amp; Ownership Graph</h2>
+      <p>The hierarchy below illustrates which class instances instantiate and own child components throughout the SmolLM inference engine:</p>
+
+      <div class="graph-container" style="padding:1.5rem">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1rem; margin-bottom:1.5rem">
+          <!-- 1. Orchestration Layer -->
+          <div style="background:var(--code-bg); border:1px solid rgba(56,189,248,0.3); border-radius:0.5rem; padding:1rem">
+            <div style="color:var(--accent-cyan); font-weight:700; font-size:0.85rem; text-transform:uppercase; margin-bottom:0.5rem">1. Orchestration Layer</div>
+            <div style="font-family:monospace; font-size:0.85rem; color:#f8fafc">
+              <strong style="color:#fff">InferenceEngine</strong>
+              <div style="color:var(--text-muted); font-size:0.75rem; margin:0.25rem 0 0.5rem 0.5rem">
+                ├── <code>model: TransformerModel</code><br>
+                ├── <code>tokenizer: HFTokenizer (ITokenizer)</code><br>
+                ├── <code>config: LlamaConfig</code><br>
+                ├── <code>kvCache: KVCacheManager</code><br>
+                └── <code>sampler: ISampler (via SamplerFactory)</code>
+              </div>
+            </div>
+            <p style="font-size:0.78rem; color:var(--text-secondary); margin:0">High-level facade orchestrating tokenization, prefill, decode loop, streaming callbacks, and stop tokens.</p>
+          </div>
+
+          <!-- 2. Model Architecture Container -->
+          <div style="background:var(--code-bg); border:1px solid rgba(168,85,247,0.3); border-radius:0.5rem; padding:1rem">
+            <div style="color:var(--accent-purple); font-weight:700; font-size:0.85rem; text-transform:uppercase; margin-bottom:0.5rem">2. TransformerModel (Container)</div>
+            <div style="font-family:monospace; font-size:0.85rem; color:#f8fafc">
+              <strong style="color:#fff">TransformerModel</strong>
+              <div style="color:var(--text-muted); font-size:0.75rem; margin:0.25rem 0 0.5rem 0.5rem">
+                ├── <code>embedTokens: Tensor [49152, 576]</code><br>
+                ├── <code>layers: readonly TransformerBlock[30]</code><br>
+                ├── <code>norm: RMSNorm [576]</code><br>
+                └── <code>lmHead: Linear [49152, 576]</code>
+              </div>
+            </div>
+            <p style="font-size:0.78rem; color:var(--text-secondary); margin:0">Executes token embeddings lookup, sequential layer traversal across all 30 blocks, final RMSNorm, and vocabulary projection.</p>
+          </div>
+
+          <!-- 3. TransformerBlock -->
+          <div style="background:var(--code-bg); border:1px solid rgba(34,197,94,0.3); border-radius:0.5rem; padding:1rem">
+            <div style="color:var(--accent-green); font-weight:700; font-size:0.85rem; text-transform:uppercase; margin-bottom:0.5rem">3. TransformerBlock (Module × 30)</div>
+            <div style="font-family:monospace; font-size:0.85rem; color:#f8fafc">
+              <strong style="color:#fff">TransformerBlock</strong>
+              <div style="color:var(--text-muted); font-size:0.75rem; margin:0.25rem 0 0.5rem 0.5rem">
+                ├── <code>inputLayernorm: RMSNorm</code><br>
+                ├── <code>selfAttn: MultiHeadAttention</code><br>
+                │ &nbsp; ├── <code>qProj: Linear [576, 576]</code><br>
+                │ &nbsp; ├── <code>kProj: Linear [192, 576] (GQA)</code><br>
+                │ &nbsp; ├── <code>vProj: Linear [192, 576] (GQA)</code><br>
+                │ &nbsp; ├── <code>oProj: Linear [576, 576]</code><br>
+                │ &nbsp; └── <code>rope: RotaryEmbedding (shared)</code><br>
+                ├── <code>postAttentionLayernorm: RMSNorm</code><br>
+                └── <code>mlp: SwiGLUMLP</code><br>
+                &nbsp; &nbsp; ├── <code>gateProj: Linear [1536, 576]</code><br>
+                &nbsp; &nbsp; ├── <code>upProj: Linear [1536, 576]</code><br>
+                &nbsp; &nbsp; └── <code>downProj: Linear [576, 1536]</code>
+              </div>
+            </div>
+            <p style="font-size:0.78rem; color:var(--text-secondary); margin:0">Dual pre-LN residual architecture with Grouped-Query Attention (3:1 query:KV ratio) and SwiGLU gated activation.</p>
+          </div>
+
+          <!-- 4. Memory & IO Support -->
+          <div style="background:var(--code-bg); border:1px solid rgba(245,158,11,0.3); border-radius:0.5rem; padding:1rem">
+            <div style="color:var(--accent-amber); font-weight:700; font-size:0.85rem; text-transform:uppercase; margin-bottom:0.5rem">4. Memory &amp; IO Infrastructure</div>
+            <div style="font-family:monospace; font-size:0.85rem; color:#f8fafc">
+              <strong style="color:#fff">KVCacheManager &amp; ModelLoader</strong>
+              <div style="color:var(--text-muted); font-size:0.75rem; margin:0.25rem 0 0.5rem 0.5rem">
+                ├── <code>layers: LayerKVCache[30]</code><br>
+                │ &nbsp; ├── <code>keyCache: Tensor [3, 2048, 64]</code><br>
+                │ &nbsp; └── <code>valueCache: Tensor [3, 2048, 64]</code><br>
+                ├── <code>ModelBuilder: Builder Pattern</code><br>
+                └── <code>SafeTensorsReader: IWeightReader</code>
+              </div>
+            </div>
+            <p style="font-size:0.78rem; color:var(--text-secondary); margin:0">Pre-allocates contiguous cache buffers and provides zero-copy deserialization of HuggingFace SafeTensors files.</p>
+          </div>
+        </div>
+      </div>
+
+      <h2>Method Invocation Call Flow: Prefill Phase</h2>
+      <p>The sequence below traces all method calls during the prompt prefill phase when <code>engine.generate()</code> begins:</p>
+
+      <div style="background:rgba(15,23,42,0.8); border:1px solid var(--border-color); border-radius:0.5rem; padding:1.25rem; font-family:monospace; font-size:0.84rem; line-height:1.7; overflow-x:auto; margin-bottom:1.5rem">
+        <div style="color:var(--accent-cyan); font-weight:700">1. engine.generate(request) [Prefill Phase]</div>
+        <div style="margin-left:1.25rem; color:#cbd5e1">
+          │── calls <strong>kvCache.reset()</strong> → resets sequence pointers to 0 for all 30 layers<br>
+          │── calls <strong>tokenizer.encode(prompt)</strong> → string to integer token IDs array [t₀, t₁, … t<sub>S−1</sub>]<br>
+          │── calls <strong>SamplerFactory.create(params)</strong> → instantiates <code>GreedySampler</code> or <code>NucleusSampler</code><br>
+          │── calls <strong>model.forward(promptTokens, startPos=0, kvCache, returnAllLogits=false)</strong> on <code>TransformerModel</code><br>
+          │ &nbsp; ├── slices rows from <strong>embedTokens.data</strong> → returns contiguous <code>Tensor [S, 576]</code><br>
+          │ &nbsp; ├── loop over <code>layers[0..29]</code>:<br>
+          │ &nbsp; │ &nbsp; └── calls <strong>block.forward(h, startPos=0, kvCache)</strong> on <code>TransformerBlock</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; ├── calls <strong>inputLayernorm.forward(h)</strong> on <code>RMSNorm</code> → standardizes channels<br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; ├── calls <strong>selfAttn.forward(norm1, startPos=0, kvCache, layerIdx)</strong> on <code>MultiHeadAttention</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── calls <strong>qProj.forward(x)</strong> [576→576], <strong>kProj.forward(x)</strong> [576→192], <strong>vProj.forward(x)</strong> [576→192]<br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── calls <strong>rope.apply(q, startPos=0)</strong> &amp; <strong>rope.apply(k, startPos=0)</strong> → rotates 2D coordinate pairs<br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── calls <strong>kvCache.update(layerIdx, startPos=0, k, v)</strong> → inserts S keys/values into cache<br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── computes causal GQA dot-product: <code>(Q × Kᵀ) / √64 + mask</code> across prompt tokens<br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── applies <strong>softmaxRows()</strong> across attention scores<br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── computes context representation: <code>scores × V</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; └── calls <strong>oProj.forward(context)</strong> on <code>Linear</code> [576→576] → returns <code>attnOut</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; ├── calls <strong>attnOut.addInPlace(x)</strong> on <code>Tensor</code> (Residual Connection 1)<br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; ├── calls <strong>postAttentionLayernorm.forward(h)</strong> on <code>RMSNorm</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; ├── calls <strong>mlp.forward(norm2)</strong> on <code>SwiGLUMLP</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── calls <strong>gateProj.forward(x)</strong> [576→1536] → calls <code>gate.siluInPlace()</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── calls <strong>upProj.forward(x)</strong> [576→1536]<br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── calls <strong>gate.mulInPlace(up)</strong> (element-wise SwiGLU gating)<br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; └── calls <strong>downProj.forward(gated)</strong> [1536→576] → returns <code>mlpOut</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; └── calls <strong>mlpOut.addInPlace(h)</strong> on <code>Tensor</code> (Residual Connection 2)<br>
+          │ &nbsp; ├── calls <strong>norm.forward(h)</strong> on <code>RMSNorm</code> → final normalized state<br>
+          │ &nbsp; ├── calls <strong>h.slice(S−1, S)</strong> on <code>Tensor</code> → isolates ONLY the final token hidden vector [1, 576]<br>
+          │ &nbsp; └── calls <strong>lmHead.forward(lastHidden)</strong> on <code>Linear</code> → projects hidden dim 576 → vocab 49,152<br>
+          └── calls <strong>sampler.sample(prefillLogits, contextTokens)</strong> → returns sampled token #1
+        </div>
+      </div>
+
+      <h2>Method Invocation Call Flow: Autoregressive Decode Phase</h2>
+      <p>The sequence below traces the single-token decode loop executing token by token:</p>
+
+      <div style="background:rgba(15,23,42,0.8); border:1px solid var(--border-color); border-radius:0.5rem; padding:1.25rem; font-family:monospace; font-size:0.84rem; line-height:1.7; overflow-x:auto; margin-bottom:1.5rem">
+        <div style="color:var(--accent-green); font-weight:700">2. while (generatedTokens.length &lt; maxTokens) [Decode Loop]</div>
+        <div style="margin-left:1.25rem; color:#cbd5e1">
+          │── checks <strong>numericStopTokens.has(currentToken)</strong> or stop text match<br>
+          │── appends <code>currentToken</code> to <code>generatedTokens</code> &amp; <code>contextTokens</code><br>
+          │── calls <strong>tokenizer.decode([currentToken])</strong> → triggers <code>onToken(tokenStr, currentToken)</code> for streaming<br>
+          │── calls <strong>model.forward([currentToken], currentPos, kvCache, returnAllLogits=false)</strong> on <code>TransformerModel</code><br>
+          │ &nbsp; ├── extracts single row from <strong>embedTokens.data</strong> → returns <code>Tensor [1, 576]</code><br>
+          │ &nbsp; ├── loop over <code>layers[0..29]</code>:<br>
+          │ &nbsp; │ &nbsp; └── calls <strong>block.forward(h, currentPos, kvCache)</strong> on <code>TransformerBlock</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; ├── calls <strong>inputLayernorm.forward(h)</strong> on <code>RMSNorm</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; ├── calls <strong>selfAttn.forward(norm1, currentPos, kvCache, layerIdx)</strong> (GEMV Operation)<br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── calls <strong>qProj.forward(x)</strong> [1×576], <strong>kProj.forward(x)</strong> [1×192], <strong>vProj.forward(x)</strong> [1×192]<br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── calls <strong>rope.apply(q, currentPos)</strong> &amp; <strong>rope.apply(k, currentPos)</strong><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── calls <strong>kvCache.update(layerIdx, currentPos, k, v)</strong> → writes 1 vector to cache slot<br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── queries Q [1, 64] against ALL cached keys [0..currentPos, 64] (O(1) memory lookup)<br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── computes softmax across <code>0..currentPos</code> attention scores<br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── computes weighted sum over cached values<br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; └── calls <strong>oProj.forward(context)</strong> → returns <code>attnOut [1, 576]</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; ├── calls <strong>attnOut.addInPlace(x)</strong> (Residual 1)<br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; ├── calls <strong>postAttentionLayernorm.forward(h)</strong> on <code>RMSNorm</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; ├── calls <strong>mlp.forward(norm2)</strong> on <code>SwiGLUMLP</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── calls <code>gateProj.forward(x)</code>, <code>gate.siluInPlace()</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── calls <code>upProj.forward(x)</code>, <code>gate.mulInPlace(up)</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; │ &nbsp; └── calls <code>downProj.forward(gated)</code> → returns <code>mlpOut [1, 576]</code><br>
+          │ &nbsp; │ &nbsp; &nbsp; &nbsp; └── calls <strong>mlpOut.addInPlace(h)</strong> (Residual 2)<br>
+          │ &nbsp; ├── calls <strong>norm.forward(h)</strong> on <code>RMSNorm</code><br>
+          │ &nbsp; └── calls <strong>lmHead.forward(h)</strong> on <code>Linear</code> → GEMV projection to logits [1, 49152]<br>
+          │── calls <strong>sampler.sample(stepLogits, contextTokens)</strong> → next token ID<br>
+          └── increments <code>currentPos++</code>
+        </div>
+      </div>
+
+      <h2>Method Invocation Call Flow: Model Loader &amp; Builder</h2>
+      <p>The sequence below traces initialization via <code>InferenceEngine.fromDirectory()</code>:</p>
+
+      <div style="background:rgba(15,23,42,0.8); border:1px solid var(--border-color); border-radius:0.5rem; padding:1.25rem; font-family:monospace; font-size:0.84rem; line-height:1.7; overflow-x:auto; margin-bottom:1.5rem">
+        <div style="color:var(--accent-amber); font-weight:700">3. InferenceEngine.fromDirectory(modelDir) [Startup Graph Construction]</div>
+        <div style="margin-left:1.25rem; color:#cbd5e1">
+          │── calls <strong>ModelLoader.loadFromDirectory(modelDir)</strong><br>
+          │ &nbsp; ├── reads <code>config.json</code> → parses hyperparameters into typed <code>LlamaConfig</code><br>
+          │ &nbsp; ├── instantiates <code>SafeTensorsReader</code> → parses binary header &amp; creates memory buffers<br>
+          │ &nbsp; └── calls <strong>ModelBuilder.setConfig(config).setWeightReader(reader).build()</strong><br>
+          │ &nbsp; &nbsp; &nbsp; ├── loads <code>embed_tokens.weight</code> [49152, 576] → returns <code>Tensor</code><br>
+          │ &nbsp; &nbsp; &nbsp; ├── instantiates shared <strong>RotaryEmbedding(headDim=64, maxSeqLen=2048, theta=10000)</strong><br>
+          │ &nbsp; &nbsp; &nbsp; ├── loop i from 0 to 29:<br>
+          │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── instantiates <code>inputLayernorm: RMSNorm</code> from <code>model.layers.i.input_layernorm.weight</code><br>
+          │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── instantiates <code>selfAttn: MultiHeadAttention</code> from <code>q_proj</code>, <code>k_proj</code>, <code>v_proj</code>, <code>o_proj</code><br>
+          │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── instantiates <code>postAttentionLayernorm: RMSNorm</code> from <code>post_attention_layernorm.weight</code><br>
+          │ &nbsp; &nbsp; &nbsp; │ &nbsp; ├── instantiates <code>mlp: SwiGLUMLP</code> from <code>gate_proj</code>, <code>up_proj</code>, <code>down_proj</code><br>
+          │ &nbsp; &nbsp; &nbsp; │ &nbsp; └── pushes new <code>TransformerBlock</code> into layers array<br>
+          │ &nbsp; &nbsp; &nbsp; ├── instantiates final <code>norm: RMSNorm</code> from <code>model.norm.weight</code><br>
+          │ &nbsp; &nbsp; &nbsp; ├── instantiates <code>lmHead: Linear</code> from <code>lm_head.weight</code> (or ties to <code>embed_tokens</code>)<br>
+          │ &nbsp; &nbsp; &nbsp; └── returns constructed <code>TransformerModel</code><br>
+          │── calls <strong>HFTokenizer.fromPretrained(modelDir)</strong> → loads BPE tokenizer vocab &amp; merges<br>
+          │── instantiates <strong>KVCacheManager(layers=30, kvHeads=3, headDim=64, maxSeqLen=2048)</strong><br>
+          └── returns fully assembled <strong>InferenceEngine</strong>
+        </div>
+      </div>
+
+      <div class="chapter-nav-footer">
+        <button class="btn btn-secondary btn-prev-chapter">← SmolLM Inference Chapter 5</button>
+        <div></div>
+      </div>
+    </article>
+
+  </main>
+</div>
+
+<script type="module" src="js/guide-app.js"></script>
+</body>
+</html>

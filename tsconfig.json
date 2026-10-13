@@ -1,0 +1,6 @@
+{
+  "files": [],
+  "references": [
+    { "path": "projects/smollm-inference" }
+  ]
+}

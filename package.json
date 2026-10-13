@@ -1,0 +1,42 @@
+{
+  "name": "typescript-llm",
+  "version": "1.0.0",
+  "description": "Pure TypeScript educational neural networks on CPU: SmolLM-135M inference engine and miniGPT training with autograd from scratch",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -b projects/smollm-inference/tsconfig.json",
+    "smollm:start": "tsx projects/smollm-inference/index.ts",
+    "smollm:build": "tsc -b projects/smollm-inference/tsconfig.json",
+    "smollm:download": "tsx projects/smollm-inference/scripts/download-model.ts",
+    "smollm:test": "tsx test/run-tests.ts",
+    "minigpt:demo": "tsx projects/mini-gpt/demo.ts",
+    "minigpt:typecheck": "tsc -p projects/mini-gpt/tsconfig.json",
+    "minigpt:test": "tsx projects/mini-gpt/autograd/test.ts",
+    "guide": "tsx projects/smollm-inference/scripts/serve-guide.ts",
+    "test": "tsx test/run-tests.ts"
+  },
+  "keywords": [
+    "llm",
+    "transformer",
+    "typescript",
+    "inference-engine",
+    "cpu",
+    "smollm",
+    "llama",
+    "autograd",
+    "training",
+    "gpt",
+    "minigpt"
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@xenova/transformers": "^2.17.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
