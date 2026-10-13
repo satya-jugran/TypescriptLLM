@@ -1,167 +1,267 @@
-# TypescriptLLM: Educational Pure TypeScript Transformer Inference Engine
+# TypescriptLLM: Educational Pure TypeScript Neural Networks on CPU
 
-An educational, dependency-free (zero-GPU, CPU-only) Large Language Model (Transformer) inference engine built entirely from scratch in strict TypeScript for Node.js.
+An educational, dependency-free (zero-GPU, 100% CPU-only) machine learning suite built entirely from scratch in strict TypeScript for Node.js.
 
-Designed following strict Object-Oriented Programming (OOP) and ML Systems Architecture principles, **TypescriptLLM** executes standard modern Transformer architectures (LLaMA, SmolLM) with pure JavaScript/TypeScript math routines, custom contiguous tensor buffers, and real-time streaming token generation.
+The repository contains two complete, standalone neural network projects demonstrating modern Transformer architectures and ML systems engineering from fundamental principles:
+
+1. **[SmolLM-135M Inference Engine](./projects/smollm-inference)**: A production-style, high-performance CPU inference engine executing pre-trained Hugging Face models (`SmolLM-135M` / LLaMA architecture) directly from binary SafeTensors with zero-allocation KV-caching, GQA, RoPE, and real-time streaming token generation.
+2. **[miniGPT Autograd & Training](./projects/mini-gpt)**: A reverse-mode automatic differentiation engine (`autograd`) and character-level GPT transformer trained end-to-end on CPU with custom backward graphs, AdamW optimizer, and gradient verification against finite differences.
 
 ---
 
-## Architecture & Design Patterns
-
-TypescriptLLM implements a modular, PyTorch-like `nn.Module` hierarchy designed for clarity, extensibility, and CPU cache-friendliness:
+## Repository Architecture
 
 ```text
-src/
-├── core/
-│   ├── tensor.ts          # Contiguous Float32Array wrapper & vectorized math
-│   ├── kv-cache.ts        # Zero-allocation stateful Key-Value cache manager
-│   └── types.ts           # Architectural configs, DTOs & interfaces
-├── layers/
-│   ├── module.ts          # Abstract base Module (nn.Module pattern)
-│   ├── linear.ts          # Dense linear projection (Y = XW^T)
-│   ├── rms-norm.ts        # Root Mean Square layer normalization
-│   ├── rope.ts            # Rotary Position Embeddings (RoPE)
-│   ├── attention.ts       # Scaled Dot-Product & Grouped-Query Attention (GQA)
-│   ├── mlp.ts             # SwiGLU Gated Feed-Forward Network
-│   └── transformer-block.ts # Pre-norm residual Transformer layer
-├── model/
-│   └── transformer.ts     # Complete Transformer (Embed -> 30 Blocks -> Norm -> LM Head)
-├── samplers/
-│   ├── sampler.interface.ts # Strategy Pattern interface
-│   ├── greedy-sampler.ts    # Argmax with repetition penalty
-│   ├── nucleus-sampler.ts   # Top-P, Top-K, temperature & repetition penalty
-│   └── sampler-factory.ts   # Factory Pattern for sampler instantiation
-├── io/
-│   ├── safetensors.ts     # Binary SafeTensors reader with on-the-fly BF16/F16 conversion
-│   └── model-loader.ts    # Hugging Face config parser & ModelBuilder
-├── tokenizer/
-│   ├── tokenizer.interface.ts # ITokenizer abstraction
-│   └── hf-tokenizer.ts       # Adapter pattern for Hugging Face tokenizers
-├── engine/
-│   └── inference-engine.ts   # High-level Facade orchestrating Prefill & Decode
-├── scripts/
-│   └── download-model.ts     # Resumable streaming downloader for SmolLM-135M
-└── index.ts                  # Interactive CLI demo with streaming & telemetry
+TypescriptLLM/
+├── guide/                               # Interactive visual browser guide (HTML/CSS/JS)
+│   ├── css/guide.css                    # Styling for dark-mode interactive widgets
+│   ├── js/guide-app.js                  # Application routing & chapter state
+│   ├── js/widgets.js                    # Interactive sandboxes (Tensors, RoPE, Attention, etc.)
+│   └── index.html                       # Standalone single-page guide app
+├── models/                              # Downloaded model weights (gitignored)
+│   └── SmolLM-135M/                     # safetensors, tokenizer, and config files
+├── projects/
+│   ├── smollm-inference/                # 1. SmolLM-135M CPU Inference Engine
+│   │   ├── core/
+│   │   │   ├── kv-cache.ts              # Zero-allocation stateful Key-Value cache manager
+│   │   │   ├── tensor.ts                # Contiguous Float32Array wrapper & vectorized math
+│   │   │   └── types.ts                 # Architecture configs, DTOs & interfaces
+│   │   ├── engine/
+│   │   │   └── inference-engine.ts      # High-level Facade orchestrating Prefill & Decode
+│   │   ├── io/
+│   │   │   ├── model-loader.ts          # Hugging Face config parser & ModelBuilder
+│   │   │   └── safetensors.ts           # Binary SafeTensors reader with BF16/F16 decoding
+│   │   ├── layers/
+│   │   │   ├── attention.ts             # Scaled Dot-Product & Grouped-Query Attention (GQA)
+│   │   │   ├── linear.ts                # Dense linear projection (Y = XW^T)
+│   │   │   ├── mlp.ts                   # SwiGLU Gated Feed-Forward Network
+│   │   │   ├── module.ts                # Abstract base Module (nn.Module pattern)
+│   │   │   ├── rms-norm.ts              # Root Mean Square layer normalization
+│   │   │   ├── rope.ts                  # Rotary Position Embeddings (RoPE)
+│   │   │   └── transformer-block.ts     # Pre-norm residual Transformer layer
+│   │   ├── model/
+│   │   │   └── transformer.ts           # Complete SmolLM/LLaMA Transformer (30 Blocks)
+│   │   ├── samplers/
+│   │   │   ├── greedy-sampler.ts        # Argmax with frequency repetition penalty
+│   │   │   ├── nucleus-sampler.ts       # Top-P, Top-K, temperature & repetition penalty
+│   │   │   ├── sampler-factory.ts       # Factory Pattern for sampler instantiation
+│   │   │   └── sampler.interface.ts     # Strategy Pattern sampler interface
+│   │   ├── scripts/
+│   │   │   ├── download-model.ts        # Resumable streaming downloader for SmolLM-135M
+│   │   │   └── serve-guide.ts           # Zero-dependency HTTP static server for guide
+│   │   ├── index.ts                     # CLI runner with real-time streaming & telemetry
+│   │   └── tsconfig.json                # Composite TypeScript project configuration
+│   └── mini-gpt/                        # 2. miniGPT Training & Autograd Engine
+│       ├── autograd/
+│       │   ├── Operations.ts            # Differentiable ops (causal mask, cross-entropy)
+│       │   ├── Tensor.ts                # Dynamic computation graph & backward pass
+│       │   └── test.ts                  # Numerical gradient checks (central finite diff)
+│       ├── data/
+│       │   └── CharTokenizer.ts         # Character-level vocabulary encoder/decoder
+│       ├── nn/
+│       │   ├── Attention.ts             # Differentiable causal multi-head attention
+│       │   ├── Embedding.ts             # Learnable Token and Position embeddings
+│       │   ├── FeedForward.ts           # 2-layer MLP with GELU activation
+│       │   ├── GPT.ts                   # Full GPT architecture with parameter tracking
+│       │   ├── LayerNorm.ts             # Standard LayerNorm with learnable scale & shift
+│       │   ├── Linear.ts                # Dense linear layer with weight & bias gradients
+│       │   ├── Module.ts                # PyTorch-like base module & parameter tree
+│       │   └── TransformerBlock.ts      # Residual Pre-Norm Transformer block
+│       ├── optim/
+│       │   └── AdamW.ts                 # AdamW optimizer with decoupled weight decay
+│       ├── train/
+│       │   ├── Loss.ts                  # Cross-Entropy loss with Log-Sum-Exp stability
+│       │   └── Trainer.ts               # Batched training loop, validation & sampling
+│       ├── demo.ts                      # End-to-end Shakespeare training demo
+│       ├── index.ts                     # Public API exports
+│       └── tsconfig.json                # Project TypeScript configuration
+├── test/
+│   └── run-tests.ts                     # Unit test suite for SmolLM inference engine
+├── package.json                         # Root workspace scripts & package metadata
+├── tsconfig.json                        # Root project references
+└── .gitignore                           # Git ignore rules for node_modules, dist, models
 ```
 
 ---
 
-## Mathematical Formulations
+## Project Highlights
 
-### 1. Contiguous Vectorized Tensor Operations (`core/tensor.ts`)
-Instead of nested `number[][]` arrays that create millions of GC objects and memory fragmentation, TypescriptLLM stores elements in flat, row-major `Float32Array` buffers:
+### Project 1: SmolLM-135M Inference Engine (`projects/smollm-inference`)
+- **Contiguous Vectorized Tensors**: Row-major flat `Float32Array` buffers with 8-way unrolled inner products to avoid garbage-collection overhead.
+- **RMSNorm (Root Mean Square Normalization)**: Mean-centering-free normalization minimizing memory passes.
+- **Rotary Position Embeddings (RoPE)**: Precomputed frequency tables with Hugging Face `rotate_half` formulation.
+- **Grouped-Query Attention (GQA)**: 9 Query heads mapped to 3 KV heads (3:1 ratio) to minimize memory bandwidth.
+- **Stateful Zero-Allocation KV-Cache**: Pre-allocated contiguous buffers managing prefill and autoregressive decode steps without per-token allocations.
+- **SwiGLU Feed-Forward Network**: Gated SiLU activation matching standard LLaMA architecture.
+- **Binary SafeTensors & BF16 Conversion**: Direct binary header parsing and on-the-fly Bfloat16/FP16 to FP32 conversion.
+- **Streaming Samplers**: Real-time token generator supporting Greedy and Nucleus sampling (Top-P, Top-K, temperature, repetition penalty).
 
-$$\text{offset}(i_0, i_1, \dots, i_{k}) = \sum_{j=0}^{k} i_j \cdot \text{stride}[j]$$
-
-The dense linear projection computes $Y = X W^T$ directly from contiguous memory rows using 8-way unrolled inner products:
-
-$$Y_{m, n} = \sum_{k=0}^{K-1} X_{m, k} \cdot W_{n, k}$$
-
-### 2. Root Mean Square Layer Normalization (`layers/rms-norm.ts`)
-RMSNorm replaces standard LayerNorm by dispensing with mean centering, improving CPU efficiency while preserving representation quality:
-
-$$\text{RMS}(x) = \sqrt{\frac{1}{d}\sum_{i=1}^d x_i^2 + \epsilon}$$
-
-$$y_i = \frac{x_i}{\text{RMS}(x)} \cdot w_i$$
-
-### 3. Rotary Position Embedding (`layers/rope.ts`)
-Frequencies are precomputed into static $\cos$ and $\sin$ lookup tables:
-
-$$\theta_i = \text{rope\_theta}^{-2i / d}, \quad i \in \left[0, \frac{d}{2}-1\right]$$
-
-Applying Hugging Face's `rotate_half` formulation:
-
-$$\begin{aligned}
-v_1 &= x[0 : d/2], \quad v_2 = x[d/2 : d] \\
-x_{\text{rope}}[0 : d/2] &= v_1 \cos(m\theta) - v_2 \sin(m\theta) \\
-x_{\text{rope}}[d/2 : d] &= v_2 \cos(m\theta) + v_1 \sin(m\theta)
-\end{aligned}$$
-
-### 4. Grouped-Query Attention with KV-Cache (`layers/attention.ts`)
-SmolLM-135M uses 9 Query heads and 3 Key/Value heads ($3\times$ Grouped-Query Attention). Each KV head is mapped to:
-
-$$h_{kv} = \left\lfloor \frac{h_q}{3} \right\rfloor$$
-
-$$\text{Attention}(Q, K, V) = \text{Softmax}\left(\frac{Q K^T}{\sqrt{d_k}} + M_{\text{causal}}\right) V$$
-
-### 5. SwiGLU Gated Feed-Forward Network (`layers/mlp.ts`)
-Modern LLaMA architectures utilize SwiGLU instead of standard GELU/ReLU activations:
-
-$$\text{SwiGLU}(x) = \left( \text{SiLU}(x W_{\text{gate}}^T) \odot (x W_{\text{up}}^T) \right) W_{\text{down}}^T$$
-
-where $\text{SiLU}(z) = \frac{z}{1 + e^{-z}}$.
+### Project 2: miniGPT Training & Autograd Engine (`projects/mini-gpt`)
+- **Reverse-Mode Autograd Engine**: Dynamic directed acyclic computation graph (DAG) with topological sort backpropagation and multivariable chain rule gradient accumulation.
+- **Numerical Gradient Checks**: Analytic backprop gradients validated against central finite difference approximations ($O(h^2)$ error).
+- **Modular Neural Network Layers**: PyTorch-style `Module` hierarchy with parameter discovery (`Linear`, `LayerNorm`, `TokenEmbedding`, `PositionEmbedding`, `TransformerBlock`).
+- **Causal Multi-Head Self-Attention**: Multi-head attention with causal upper-triangular masking to enforce autoregressive conditioning.
+- **Numerically Stable Cross-Entropy Loss**: Log-sum-exp trick to prevent floating-point overflow during exponentiation.
+- **AdamW Optimizer**: First and second moment tracking with bias correction and decoupled weight decay.
+- **End-to-End CPU Trainer**: Batched training loop with validation split, loss tracking, and sample generation.
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+ (tested on Node v24.15.0)
-- npm
+- **Node.js**: v18.0.0 or later (tested on Node v20+ and v24+)
+- **npm**: v9.0.0 or later
 
-### 1. Installation
+### Installation
+Clone the repository and install developer dependencies:
 ```bash
 git clone <repo-url>
 cd TypescriptLLM
 npm install
 ```
 
-### 2. Run the Interactive Visual Guide
-Launch the built-in visual guide to walk through every concept (Tensors, Embeddings, RoPE, Attention, KV-Cache, BF16, and Sampling) with interactive sandboxes:
-```bash
-npm run guide
-```
-Then open `http://localhost:3000` in your browser (or double-click `guide/index.html`).
+---
 
-### 3. Run Test Suite
-Verify all mathematical layers, tensor math, RoPE, KV cache, and samplers:
+## Commands & Scripts Reference
+
+All primary workflows are configured as npm scripts in `package.json`:
+
+| Command | Script / Target | Description |
+|---|---|---|
+| `npm run smollm:start` | `tsx projects/smollm-inference/index.ts` | Run SmolLM-135M inference engine with streaming output |
+| `npm run smollm:download` | `tsx projects/smollm-inference/scripts/download-model.ts` | Download SmolLM-135M weights and config (~538 MB) |
+| `npm run smollm:build` *(or `npm run build`)* | `tsc -b projects/smollm-inference/tsconfig.json` | Compile TypeScript inference engine into `dist/` |
+| `npm run smollm:test` *(or `npm test`)* | `tsx test/run-tests.ts` | Run SmolLM mathematical layer & component test suite |
+| `npm run minigpt:demo` | `tsx projects/mini-gpt/demo.ts` | Train character-level miniGPT with autograd on CPU |
+| `npm run minigpt:test` | `tsx projects/mini-gpt/autograd/test.ts` | Run autograd numerical gradient checks (finite difference) |
+| `npm run minigpt:typecheck` | `tsc -p projects/mini-gpt/tsconfig.json` | Type-check the mini-GPT codebase with strict TypeScript |
+| `npm run guide` | `tsx projects/smollm-inference/scripts/serve-guide.ts` | Serve the interactive visual browser guide at `localhost:3000` |
+
+---
+
+## Usage Guide
+
+### 1. SmolLM-135M Inference Engine
+
+#### Step A: Download Model Weights
+Download the pre-trained weights from Hugging Face Hub (stored under `models/SmolLM-135M/`):
 ```bash
-npm test
+npm run smollm:download
+```
+*(If weights are not found when starting inference, `smollm:start` will automatically download them.)*
+
+#### Step B: Run Streaming Generation
+Run generation with custom prompt, token budget, and temperature:
+```bash
+npm run smollm:start -- --prompt "The key principles of computer systems architecture are" --max-tokens 48 --temperature 0.7
 ```
 
-### 4. Download Model Weights
-Download `HuggingFaceTB/SmolLM-135M` (or pass custom arguments):
+Deterministic greedy generation:
 ```bash
-npm run download
+npm run smollm:start -- --prompt "The boiling point of water is" --max-tokens 15 --temperature 0
 ```
 
-### 5. Interactive CLI Generation
-Run the inference engine in TypeScript:
-```bash
-npm start -- --prompt "The capital of France is" --max-tokens 15 --temperature 0
-```
-
-Or run creative nucleus sampling:
-```bash
-npx tsx src/index.ts --prompt "Once upon a time in a small village," --max-tokens 32 --temperature 0.7 --top-p 0.9
-```
-
-Or run the compiled distribution:
+#### Step C: Build and Run Compiled JavaScript
 ```bash
 npm run build
-node dist/index.js --prompt "The boiling point of water is" --max-tokens 10 --temperature 0
+node dist/index.js --prompt "Artificial intelligence is" --max-tokens 30 --temperature 0.7
+```
+
+#### Inference CLI Options
+
+| Option | Default | Description |
+|---|---|---|
+| `--model-dir` | `./models/SmolLM-135M` | Path to directory with `model.safetensors` and `config.json` |
+| `--prompt` | `"The key principles..."` | Input prompt text |
+| `--max-tokens` | `48` | Maximum number of autoregressive tokens to generate |
+| `--temperature` | `0.7` | Temperature scaling (`0` for deterministic greedy sampling) |
+| `--top-p` | `0.9` | Nucleus sampling cumulative probability threshold |
+| `--top-k` | `50` | Top-K candidate truncation |
+| `--rep-penalty` | `1.1` | Repetition penalty applied to previous tokens |
+
+---
+
+### 2. miniGPT Training Demo
+
+Train a 2-layer, 4-head character-level transformer on CPU in pure TypeScript using backpropagation:
+```bash
+npm run minigpt:demo
+```
+
+Sample output:
+```text
+=== mini-GPT (character-level, pure TypeScript autograd) ===
+
+corpus: 5956 chars | vocab size: 46
+model: 2 blocks × 4 heads, nEmbd=32
+parameters: 26,798 learnable scalars
+
+sanity: first loss 3.844 vs ln(vocabSize)=3.829 (untrained model ≈ uniform guessing)
+
+--- training ---
+step   11 | loss 3.5124
+step   21 | loss 3.2996
+step   31 | loss 3.2044
+step   41 | loss 3.2683
+step   51 | loss 3.0819
+step   51 | val loss 3.1124
+step   61 | loss 2.9255
+step   71 | loss 3.0412
+step   81 | loss 2.9254
+step   91 | loss 2.8023
+training done in 5.2s
+
+final val loss: 2.790
+
+greedy (temperature=0) from "The ":
+  The t th tathe t the t to the the the the the the the
 ```
 
 ---
 
-## Supported Options
+### 3. Interactive Visual Guide
 
-| Option | Default | Description |
-|---|---|---|
-| `--model-dir` | `./models/SmolLM-135M` | Path to model folder containing `model.safetensors` and `config.json` |
-| `--prompt` | `"The key principles..."` | Input prompt text |
-| `--max-tokens` | `48` | Maximum number of autoregressive tokens to generate |
-| `--temperature` | `0.7` | Temperature scaling (set `0` for deterministic greedy sampling) |
-| `--top-p` | `0.9` | Nucleus sampling cumulative probability threshold |
-| `--top-k` | `50` | Top-K candidate truncation |
-| `--rep-penalty`| `1.1` | Frequency repetition penalty applied to context tokens |
+Launch the built-in visual educational guide:
+```bash
+npm run guide
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser (or open `guide/index.html` directly). The interactive guide features live sandboxes explaining:
+- **Tensors & Strides**: Memory layout, row-major indexing, contiguous buffer slicing.
+- **Embeddings**: Token ID to dense vector lookup.
+- **Rotary Position Embeddings (RoPE)**: 2D vector rotation visualization and isometry.
+- **Attention & KV-Cache**: Scaled dot-product attention heatmap, causal masking, memory savings.
+- **SafeTensors & BF16**: Binary float conversion breakdown.
+- **Sampling Strategies**: Interactive temperature, Top-K, and Top-P probability distribution explorer.
 
 ---
 
 ## Performance Benchmark on CPU
 
-Execution on standard multi-core consumer CPU (SmolLM-135M, 30 Layers, 576 Hidden Size, 49,152 Vocab):
-- **Model Load Time**: ~0.7s to 1.0s
-- **Prefill Latency**: ~140 ms / prompt token
-- **Autoregressive Decode Throughput**: **~5 to 7 tokens / second** in pure TypeScript
-- **Memory Footprint**: ~600 MB (fits comfortably in default Node.js heap)
+Execution on standard modern consumer CPU (SmolLM-135M, 30 Layers, 576 Hidden Size, 49,152 Vocab):
+- **Model Load Time**: ~0.8s to 1.6s (SafeTensors parsing + BF16 FP32 conversion)
+- **Prefill Latency**: ~140 – 170 ms / prompt token
+- **Autoregressive Decode Throughput**: **~6 to 7 tokens / second** in pure TypeScript
+- **Memory Footprint**: ~600 MB (fits comfortably within default Node.js memory limit)
+
+---
+
+## Testing
+
+Run the SmolLM inference mathematical unit test suite:
+```bash
+npm test
+```
+*Validates Tensor indexing, linear projections, SiLU, RMSNorm, Softmax, RoPE isometry, KV-Cache sliding window, SwiGLU MLP, Multi-Head Attention, Greedy/Nucleus samplers, and SafeTensors BF16 decoding (31/31 assertions).*
+
+Run the autograd finite-difference gradient checks:
+```bash
+npm run minigpt:test
+```
+*Validates analytic backpropagation gradients against central finite difference estimates across operations, loss, and full transformer layers.*
+
+Type-check both projects:
+```bash
+npm run build
+npm run minigpt:typecheck
+```
